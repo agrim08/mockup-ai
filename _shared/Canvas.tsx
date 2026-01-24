@@ -1,8 +1,10 @@
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
 import React, { useState } from 'react'
 import ScreenFrame from "./ScreenFrame";
 import { ProjectType, ScreenConfigType } from "@/types/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Minus, Plus, RefreshCcw, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type Props = {
     projectDetail: ProjectType | undefined;
@@ -11,12 +13,23 @@ type Props = {
 }
 
 const Canvas = ({projectDetail, screenConfig, loading}: Props) => {
-  const [panningEnabled, setPanningEnabled] = useState(true); 
-
+  const [panningEnabled, setPanningEnabled] = useState(true);
   const isMobile = projectDetail?.device === 'MOBILE';
   const SCREEN_WIDTH = isMobile ? 400 : 1200;
   const SCREEN_HEIGHT = isMobile ? 844 : 900;
   const gap = isMobile ? 10 : 70;
+
+  const Controls = () => {
+    const { zoomIn, zoomOut, resetTransform } = useControls();
+
+    return (
+            <div className="tools absolute p-1 bg-white shadow-md flex gap-3 rounded-4xl bottom-7 left-1/2 z-30 text-gray-600 cursor-pointer">
+                <Button variant={'ghost'} size={'sm'} onClick={() => zoomIn()}><Plus /></Button>
+                <Button variant={'ghost'} size={'sm'} onClick={() => zoomOut()}><Minus /></Button>
+                <Button variant={'ghost'} size={'sm'} onClick={() => resetTransform()}><RefreshCcw /></Button>
+            </div>
+        );
+    };
 
   return (
     <div className="w-full h-screen bg-gray-100"
@@ -27,7 +40,7 @@ const Canvas = ({projectDetail, screenConfig, loading}: Props) => {
     >
         <TransformWrapper
             initialScale={0.7}
-            minScale={0.5}
+            minScale={0.1}
             maxScale={3}
             initialPositionX={50}
             initialPositionY={50}
@@ -36,6 +49,9 @@ const Canvas = ({projectDetail, screenConfig, loading}: Props) => {
             doubleClick={{disabled:false}}
             panning={{disabled: !panningEnabled}}
         >
+            {({ zoomIn, zoomOut, resetTransform, ...rest }) => (
+        <>
+          <Controls />
             <TransformComponent
                 wrapperStyle={{width:'100%', height:'100%'}}
             >
@@ -92,6 +108,8 @@ const Canvas = ({projectDetail, screenConfig, loading}: Props) => {
                     </React.Fragment>
                 ))}
             </TransformComponent>
+            </>
+        )}
         </TransformWrapper>
     </div>
   )

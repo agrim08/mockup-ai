@@ -1,7 +1,7 @@
 import { THEMES, themeToCssVars } from '@/data/Theme';
 import { ProjectType } from '@/types/types';
 import { GripVertical } from 'lucide-react';
-import React from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Rnd } from 'react-rnd'
 
 interface Props {
@@ -18,8 +18,14 @@ const ScreenFrame = ({x, y, setPanningEnabled, width, height, html, projectDetai
 
     const selectedTheme = projectDetail?.theme as any;
     const themeObj = THEMES[selectedTheme as keyof typeof THEMES] || THEMES.AURORA_INK;
+    const iframeRef = useRef<HTMLIFrameElement | null>(null);
+    const [size, setSize] = useState({ width, height });
 
-  const htmlCode = `
+    useEffect(() => {
+        setSize({ width, height });
+    }, [width, height]);
+
+    const htmlCode = `
         <!doctype html>
         <html>
         <head>
@@ -44,6 +50,77 @@ const ScreenFrame = ({x, y, setPanningEnabled, width, height, html, projectDetai
         </html>
     `;
 
+    const measureIframeHeight = useCallback(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+        try {
+            const doc = iframe.contentDocument;
+            if (!doc) return;
+
+            const headerH = 40;
+            const htmlEl = doc.documentElement;
+            const body = doc.body;
+
+            const contentH = Math.max(
+                htmlEl?.scrollHeight ?? 0,
+                body?.scrollHeight ?? 0,
+                htmlEl?.offsetHeight ?? 0,
+                body?.offsetHeight ?? 0
+            );
+
+            const next = Math.min(Math.max(contentH + headerH, 160), 2000);
+
+            setSize((s) =>
+                Math.abs(s.height - next) > 2
+                    ? { ...s, height: next }
+                    : s
+            );
+        } catch {
+                // if sandbox/origin blocks access, we can't measure
+        }
+    }, []);
+
+    useEffect(() => {
+        const iframe = iframeRef.current;
+        if (!iframe) return;
+
+        const onLoad = () => {
+            measureIframeHeight();
+
+            // ✅ observe DOM changes inside iframe
+            const doc = iframe.contentDocument;
+            if (!doc) return;
+
+            const observer = new MutationObserver(() => measureIframeHeight());
+            observer.observe(doc.documentElement, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                characterData: true,
+            });
+
+            // ✅ re-check a few times for fonts/images/tailwind async layout
+            const t1 = window.setTimeout(measureIframeHeight, 50);
+            const t2 = window.setTimeout(measureIframeHeight, 200);
+            const t3 = window.setTimeout(measureIframeHeight, 600);
+
+            return () => {
+                observer.disconnect();
+                window.clearTimeout(t1);
+                window.clearTimeout(t2);
+                window.clearTimeout(t3);
+            };
+        };
+
+        iframe.addEventListener("load", onLoad);
+        window.addEventListener("resize", measureIframeHeight);
+
+        return () => {
+            iframe.removeEventListener("load", onLoad);
+            window.removeEventListener("resize", measureIframeHeight);
+        };
+    }, [measureIframeHeight, htmlCode]);
+
   return (
     <Rnd
         default={{
@@ -52,6 +129,7 @@ const ScreenFrame = ({x, y, setPanningEnabled, width, height, html, projectDetai
             width,
             height
         }}
+        size={size}
         dragHandleClassName='drag-handle'
         enableResizing={{
             bottomLeft: true,
@@ -63,13 +141,19 @@ const ScreenFrame = ({x, y, setPanningEnabled, width, height, html, projectDetai
         onDragStart={() => setPanningEnabled(false)}
         onDragStop={() => setPanningEnabled(true)}
         onResizeStart={() => setPanningEnabled(false)}
-        onResizeStop={() => setPanningEnabled(true)}
+        onResizeStop={(_, __, ref, ___, position) => {setPanningEnabled(true);
+            setSize({
+                width: ref?.offsetWidth,
+                height: ref?.offsetHeight
+            });
+        }}
     >
 
         <div className='drag-handle cursor-move p-2 bg-gray-100 flex items-center gap-2'>
             <GripVertical className='h-4 w-4 text-gray-500'/>Drag
         </div>
         <iframe 
+            ref={iframeRef}
             className='w-full bg-white h-[calc(100%-40px)] rounded-2xl mt-5'
             sandbox='allow-same-origin allow-scripts'
             srcDoc={htmlCode}
