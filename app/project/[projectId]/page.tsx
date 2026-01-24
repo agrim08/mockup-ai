@@ -6,6 +6,7 @@ import axios from 'axios'
 import { useParams } from 'next/navigation'
 import { ProjectType, ScreenConfigType } from '@/types/types'
 import Loading from '@/components/custom/Loading'
+import Canvas from '@/_shared/Canvas'
 
 const ProjectCanvasPlayground = () => {
   const [projectDetail, setProjectDetail] = useState<ProjectType>()
@@ -89,9 +90,10 @@ const ProjectCanvasPlayground = () => {
   return (
     <div className='pt-15'>
         <ProjectHeader />
-        <div className="">
+        <div className="flex">
           <Loading loading={loading} message={loadingMsg} />
-            <ProjectSettings projectDetail={projectDetail}/>
+          <ProjectSettings projectDetail={projectDetail}/>
+          <Canvas/>
         </div>
     </div>
   )
