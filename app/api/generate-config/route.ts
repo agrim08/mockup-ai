@@ -56,6 +56,9 @@ export async function POST(request: NextRequest) {
 
         console.log("Updated Project Row:", updatedProject[0]);
 
+        // Clear existing screen configs for this project before inserting new ones to prevent duplicates
+        await db.delete(ScreenConfigTable).where(eq(ScreenConfigTable.projectId, projectId as string));
+
         const screenConfigs = (jsonResult.screens || []).map((screen: any) => 
             db.insert(ScreenConfigTable).values({
                 projectId,

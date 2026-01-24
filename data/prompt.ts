@@ -121,6 +121,10 @@ CRITICAL OUTPUT RULES:
     - Avatars: https://i.pravatar.cc/400
     - Other images: Use Unsplash URLs (e.g., https://images.unsplash.com/photo-{id} or https://source.unsplash.com/featured/?{keyword}).
 - Theme variables are PREDEFINED by the parent. NEVER redeclare them.
+- LINK & INTERACTION RULES:
+    - NEVER use href="#" or empty links.
+    - ALL links/buttons MUST use href="javascript:void(0)" to prevent recursion/reloading inside the iframe.
+    - Mockup navigation must be visual only.
 - Use CSS variables for foundational colors ONLY:
     - bg-[var(--background)]
     - text-[var(--foreground)]

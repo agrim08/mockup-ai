@@ -34,6 +34,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
+import { THEME_NAME_LIST } from '@/data/Theme'
 import { categories } from '@/data/constants'
 import axios from 'axios'
 import Loading from '@/components/custom/Loading'
@@ -41,8 +42,8 @@ import Loading from '@/components/custom/Loading'
 const Hero = () => {
   const router = useRouter()
   const { user, isLoaded } = useUser()
-  const [isAutoMode, setIsAutoMode] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('Website')
+  const [selectedTheme, setSelectedTheme] = useState<string>(THEME_NAME_LIST[0])
   const [userInput, setUserInput] = useState<string>()
   const [loading, setLoading] = useState(false)
 
@@ -66,6 +67,7 @@ const Hero = () => {
       projectId,
       userInput,
       device: selectedCategory,
+      theme: selectedTheme
     })  
     
     router.push('/project/' + projectId)
@@ -134,36 +136,51 @@ const Hero = () => {
               onChange={(e) => setUserInput(e?.target?.value)}
             />
             
-            {/* Bottom Section with Theme Selector and Submit */}
+            {/* Bottom Section with Selectors and Submit */}
             <InputGroupAddon align="block-end" className="border-t border-slate-200 dark:border-slate-700">
-              <div className="flex items-center justify-between w-full gap-4">
-                {/* Theme Selector */}
-                <div className="flex-shrink-0">
-                  <Select value={selectedCategory} onValueChange={(val) => setSelectedCategory(val)} defaultValue='website'>
-                    <SelectTrigger className="h-10 w-40 bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200">
-                      <SelectValue placeholder="Theme" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Website">Website</SelectItem>
-                      <SelectItem value="Mobile App">Mobile App</SelectItem>
-                      <SelectItem value="Dashboard">Dashboard</SelectItem>
-                      <SelectItem value="Landing Page">Landing Page</SelectItem>
-                      <SelectItem value="E-Commerce">E-Commerce</SelectItem>
-                      <SelectItem value="Portfolio">Portfolio</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div className="flex items-center justify-between w-full gap-2 md:gap-4 mt-2">
+                <div className='flex items-center gap-2'>
+                  {/* Device Selector */}
+                  <div className="flex-shrink-0">
+                    <Select value={selectedCategory} onValueChange={(val) => setSelectedCategory(val)} defaultValue='Website'>
+                      <SelectTrigger className="h-10 w-32 md:w-40 bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200">
+                        <SelectValue placeholder="Device" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="WEBSITE">Website</SelectItem>
+                        <SelectItem value="MOBILE">Mobile App</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Theme Selector */}
+                  <div className="flex-shrink-0">
+                    <Select value={selectedTheme} onValueChange={(val) => setSelectedTheme(val)} defaultValue={THEME_NAME_LIST[0]}>
+                      <SelectTrigger className="h-10 w-32 md:w-40 bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200">
+                        <SelectValue placeholder="Theme" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {THEME_NAME_LIST.map((theme) => (
+                          <SelectItem key={theme} value={theme}>
+                            {theme.split('_').map(word => word.charAt(0) + word.slice(1).toLowerCase()).join(' ')}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                  <Button
-                    type="button"
-                    disabled={loading}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleSubmit()
-                    }}
-                    className="bg-rose-500 hover:bg-rose-600 cursor-pointer text-white font-semibold px-8 py-2 h-10 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 flex items-center justify-center"
-                  >
-                    {loading ? <Loader2 className='animate-spin'/> : <Send className="w-4 h-4" />}
-                  </Button>
+
+                <Button
+                  type="button"
+                  disabled={loading}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleSubmit()
+                  }}
+                  className="bg-rose-500 hover:bg-rose-600 cursor-pointer text-white font-semibold px-4 md:px-8 py-2 h-10 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 flex items-center justify-center"
+                >
+                  {loading ? <Loader2 className='animate-spin'/> : <Send className="w-4 h-4" />}
+                </Button>
               </div>
             </InputGroupAddon>
           </InputGroup>

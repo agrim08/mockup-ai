@@ -12,6 +12,7 @@ const ProjectCanvasPlayground = () => {
   const [projectDetail, setProjectDetail] = useState<ProjectType>()
   const [loading, setLoading] = useState(true)
   const [loadingMsg, setLoadingMsg] = useState('')
+  const [screenConfigOriginal, setScreenConfigOriginal] = useState<ScreenConfigType[]>([])
   const [screenConfig, setScreenConfig] = useState<ScreenConfigType[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const {projectId} = useParams()
@@ -26,22 +27,23 @@ const ProjectCanvasPlayground = () => {
       const res = await axios.get('/api/project?projectId=' + projectId)
       console.log(res?.data)
       setProjectDetail(res?.data.projectDetails)
+      setScreenConfigOriginal(res?.data.screenConfig)
       setScreenConfig(res?.data.screenConfig)
 
       setLoading(false)
   }
 
   useEffect(() => {
-    if(projectDetail && screenConfig && screenConfig.length === 0){
+    if(projectDetail && screenConfigOriginal && screenConfigOriginal.length === 0){
       createScreenConfig()
     }
-    else if(projectDetail && screenConfig && screenConfig.length > 0 && !isGenerating){
-      const hasMissingCode = screenConfig.some(screen => !screen.code);
+    else if(projectDetail && screenConfigOriginal && screenConfigOriginal.length > 0 && !isGenerating){
+      const hasMissingCode = screenConfigOriginal.some(screen => !screen.code);
       if (hasMissingCode) {
         GenerateScreenUI()
       }
     }
-  }, [projectDetail, screenConfig, isGenerating])
+  }, [projectDetail, screenConfigOriginal, isGenerating])
 
   const createScreenConfig = async() => {
       setLoadingMsg('Creating Screens...')
@@ -73,16 +75,17 @@ const ProjectCanvasPlayground = () => {
           purpose: screen?.purpose,
           screenDescription: screen?.screenDescription,
         })
-        console.log(res?.data)
-        // Instead of immediate state update which triggers effect, 
-        // we can update it at once or just rely on the next fetch
+        console.log("Generated Screen Data:", res?.data)
+        
+        // Update local state immediately so user sees progress
+        setScreenConfig((prev) => 
+          prev.map((item) => (item.id === res.data.id ? res.data : item))
+        )
       } catch (error) {
         console.error("Error generating screen UI:", error)
       }
     }
     
-    // Refresh the whole project to get all generated code
-    await getProjectDetail()
     setIsGenerating(false)
     setLoading(false)
   }
@@ -93,7 +96,7 @@ const ProjectCanvasPlayground = () => {
         <div className="flex">
           <Loading loading={loading} message={loadingMsg} />
           <ProjectSettings projectDetail={projectDetail}/>
-          <Canvas/>
+          <Canvas projectDetail={projectDetail} screenConfig={screenConfig} loading={loading}/>
         </div>
     </div>
   )
