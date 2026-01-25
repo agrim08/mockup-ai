@@ -1,9 +1,11 @@
 import { SettingContext } from '@/context/SettingContext';
 import { THEMES, themeToCssVars } from '@/data/Theme';
-import { ProjectType } from '@/types/types';
+import { ProjectType, ScreenConfigType } from '@/types/types';
 import { GripVertical } from 'lucide-react';
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { Rnd } from 'react-rnd'
+import ScreenHandler from './ScreenHandler';
+import { htmlWrapper } from '@/data/constants';
 
 interface Props {
     x: number;
@@ -13,9 +15,10 @@ interface Props {
     height: number;
     html: string | undefined;
     projectDetail: ProjectType | undefined;
+    screen: ScreenConfigType
 }
 
-const ScreenFrame = ({x, y, setPanningEnabled, width, height, html, projectDetail}: Props) => {
+const ScreenFrame = ({x, y, setPanningEnabled, width, height, html, projectDetail, screen}: Props) => {
 
     const {settingDetails} = useContext(SettingContext)
     const themeObj = THEMES[settingDetails?.theme as keyof typeof THEMES ?? projectDetail?.theme as keyof typeof THEMES];
@@ -26,30 +29,7 @@ const ScreenFrame = ({x, y, setPanningEnabled, width, height, html, projectDetai
         setSize({ width, height });
     }, [width, height]);
 
-    const htmlCode = `
-        <!doctype html>
-        <html>
-        <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <!-- Google Font -->
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-
-        <!-- Tailwind + Iconify -->
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
-        <style>
-            ${themeToCssVars(themeObj)}
-        </style>
-        </head>
-        <body class="bg-[var(--background)] text-[var(--foreground)] w-full">
-        ${html ?? ""}
-        </body>
-        </html>
-    `;
+    const htmlCode = htmlWrapper(themeObj, html);
 
     const measureIframeHeight = useCallback(() => {
     const iframe = iframeRef.current;
@@ -58,7 +38,7 @@ const ScreenFrame = ({x, y, setPanningEnabled, width, height, html, projectDetai
             const doc = iframe.contentDocument;
             if (!doc) return;
 
-            const headerH = 40;
+            const headerH = 50;
             const htmlEl = doc.documentElement;
             const body = doc.body;
 
@@ -150,12 +130,10 @@ const ScreenFrame = ({x, y, setPanningEnabled, width, height, html, projectDetai
         }}
     >
 
-        <div className='drag-handle cursor-move p-2 bg-gray-100 flex items-center gap-2'>
-            <GripVertical className='h-4 w-4 text-gray-500'/>Drag
-        </div>
+        <ScreenHandler screen={screen} theme={themeObj} iframeRef={iframeRef} projectId={projectDetail?.projectId as string}/>
         <iframe 
             ref={iframeRef}
-            className='w-full bg-white h-[calc(100%-40px)] rounded-2xl mt-5'
+            className='w-full bg-white h-[calc(100%-52px)] rounded-b-2xl'
             sandbox='allow-same-origin allow-scripts'
             srcDoc={htmlCode}
         />

@@ -1,9 +1,10 @@
 import { db } from "@/config/db";
 // import { openrouter } from "@/config/openrouter";
-import { googleModel } from "@/config/google";
+import { genAI, googleModel } from "@/config/google";
 import { ProjectsTable, ScreenConfigTable } from "@/config/schema";
 import { UI_GENERATION_PROMPT } from "@/data/prompt";
-import { eq } from "drizzle-orm";
+import { currentUser } from "@clerk/nextjs/server";
+import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -30,8 +31,13 @@ export async function POST(request: NextRequest) {
 
     // let rawContent = aiResult?.choices[0]?.message.content as string;
 
-    const aiResult = await googleModel.generateContent(
-        `System: ${UI_GENERATION_PROMPT}\n\nUser: Device Type: ${device}\nUser Request: ${userInput}`
+    const genModel = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        systemInstruction: UI_GENERATION_PROMPT,
+    });
+
+    const aiResult = await genModel.generateContent(
+        `Device Type: ${device}\nUser Request: ${userInput}`
     );
     let rawContent = aiResult.response.text();
 
@@ -75,5 +81,24 @@ export async function POST(request: NextRequest) {
     }
     else{
         return NextResponse.json({error: 'Internal Server Error'})
+    }
+}
+
+export async function DELETE(request: NextRequest) {
+    try {
+        const projectId = request.nextUrl.searchParams.get("projectId") 
+        const screenId = request.nextUrl.searchParams.get("screenId")
+        const user = await currentUser() 
+
+        if(!user){
+            return NextResponse.json({error: "Unauthorized"})
+        }
+
+        await db.delete(ScreenConfigTable).where(and(eq(ScreenConfigTable.projectId, projectId as string), eq(ScreenConfigTable.screenId, screenId as string)))
+
+        return NextResponse.json({message: "Screen deleted successfully"})
+    } catch (error) {
+        console.log("Error deleting screen:", error)
+        return NextResponse.json({error: "Internal Server Error"})
     }
 }

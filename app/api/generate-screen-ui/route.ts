@@ -1,6 +1,6 @@
 import { db } from "@/config/db";
 // import { openrouter } from "@/config/openrouter";
-import { googleModel } from "@/config/google";
+import { genAI, googleModel } from "@/config/google";
 import { ScreenConfigTable } from "@/config/schema";
 import { CODE_GENERATION_PROMPT, UI_GENERATION_PROMPT } from "@/data/prompt";
 import { and, eq } from "drizzle-orm";
@@ -10,9 +10,10 @@ export async function POST(request: NextRequest) {
     const {projectId, screenId, screenName, purpose, screenDescription, projectVisualDescription} = await request.json();
 
     const userInput = `
-        screen Name is: ${screenName}
-        screen Purpose: ${purpose}
-        screen Description: ${screenDescription}
+        Project Blueprint: ${projectVisualDescription}
+        Screen Name: ${screenName}
+        Screen Purpose: ${purpose}
+        Screen Description: ${screenDescription}
     `
     try {   
         // const aiResult = await openrouter.chat.send({
@@ -42,8 +43,13 @@ export async function POST(request: NextRequest) {
 
         // const response = aiResult?.choices[0]?.message.content
 
-        const aiResult = await googleModel.generateContent(
-            `System: ${CODE_GENERATION_PROMPT}\n\nUser: ${userInput}`
+        const genModel = genAI.getGenerativeModel({
+            model: "gemini-2.5-flash",
+            systemInstruction: CODE_GENERATION_PROMPT,
+        });
+
+        const aiResult = await genModel.generateContent(
+            userInput
         );
         let response = aiResult.response.text();
 

@@ -26,16 +26,16 @@ const Canvas = ({projectDetail, screenConfig, loading}: Props) => {
     const { zoomIn, zoomOut, resetTransform } = useControls();
 
     return (
-        <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-xl border border-slate-200 shadow-sm">
-            <Button variant="ghost" size="icon" onClick={() => zoomIn()} className="h-8 w-8 rounded-lg hover:bg-slate-100">
-                <Plus className="w-4 h-4 text-slate-600" />
+        <div className="flex items-center gap-0.5 bg-white/20 backdrop-blur-lg px-1 py-0.5 rounded-lg border border-white/10 shadow-sm">
+            <Button variant="ghost" size="icon" onClick={() => zoomIn()} className="h-6 w-6 rounded-md hover:bg-white/20 transition-colors">
+                <Plus className="w-3 h-3 text-slate-700" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => zoomOut()} className="h-8 w-8 rounded-lg hover:bg-slate-100">
-                <Minus className="w-4 h-4 text-slate-600" />
+            <Button variant="ghost" size="icon" onClick={() => zoomOut()} className="h-6 w-6 rounded-md hover:bg-white/20 transition-colors">
+                <Minus className="w-3 h-3 text-slate-700" />
             </Button>
-            <div className="w-[1px] h-4 bg-slate-200 mx-1" />
-            <Button variant="ghost" size="icon" onClick={() => resetTransform()} className="h-8 w-8 rounded-lg hover:bg-slate-100">
-                <RefreshCcw className="w-3.5 h-3.5 text-slate-600" />
+            <div className="w-[1px] h-3 bg-slate-400/30 mx-0.5" />
+            <Button variant="ghost" size="icon" onClick={() => resetTransform()} className="h-6 w-6 rounded-md hover:bg-white/20 transition-colors">
+                <RefreshCcw className="w-2.5 h-2.5 text-slate-700" />
             </Button>
         </div>
     );
@@ -45,12 +45,14 @@ const Canvas = ({projectDetail, screenConfig, loading}: Props) => {
     const { setTransform } = useControls();
 
     return (
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 p-2 bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200 shadow-2xl max-w-[95vw]">
-        <Controls />
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 p-1 bg-white/40 backdrop-blur-2xl rounded-xl border border-white/30 shadow-2xl max-w-[90vw]">
+        <div className="px-1">
+          <Controls />
+        </div>
         
-        <div className="w-[1px] h-8 bg-slate-200 hidden md:block" />
+        <div className="w-[1px] h-5 bg-slate-400/20 hidden md:block" />
 
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide py-1">
+        <div className="flex gap-0.5 overflow-x-auto scrollbar-hide py-0.5 px-1 max-w-full">
             {screenConfig.map((screen, index) => (
             <Button
                 key={index}
@@ -61,16 +63,13 @@ const Canvas = ({projectDetail, screenConfig, loading}: Props) => {
                 const xPos = -(index * (SCREEN_WIDTH + gap)) * scale + 150;
                 setTransform(xPos, 50, scale);
                 }}
-                className="whitespace-nowrap flex items-center gap-2 hover:bg-slate-50 transition-all rounded-xl border border-transparent hover:border-slate-200 px-3 py-1.5 h-10 group"
+                className="whitespace-nowrap flex items-center gap-1.5 hover:bg-white/30 transition-all rounded-lg border border-transparent hover:border-white/20 px-2 py-0.5 h-7 group"
             >
-                <div className="w-6 h-6 bg-primary/10 rounded-lg flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <span className="text-[10px] font-bold text-primary">{index + 1}</span>
+                <div className="w-4 h-4 bg-primary/20 rounded-md flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+                    <span className="text-[8px] font-bold text-primary">{index + 1}</span>
                 </div>
                 <div className="flex flex-col items-start text-left">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none mb-0.5">
-                        {screen?.screenName ? 'Screen' : 'Waiting'}
-                    </span>
-                    <span className="text-xs font-bold text-slate-700 truncate max-w-[120px] leading-tight text-nowrap">
+                    <span className="text-[10px] font-bold text-slate-800 truncate max-w-[90px] leading-none text-nowrap">
                         {screen?.screenName || `Screen ${index + 1}`}
                     </span>
                 </div>
@@ -116,6 +115,7 @@ const Canvas = ({projectDetail, screenConfig, loading}: Props) => {
                                 setPanningEnabled={setPanningEnabled}
                                 html={screen?.code}
                                 projectDetail={projectDetail}
+                                screen={screen}
                             />
                         ) : (
                             <div

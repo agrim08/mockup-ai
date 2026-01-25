@@ -1,0 +1,205 @@
+import React, { useContext, useState } from 'react'
+import { ScreenConfigType } from '@/types/types'
+import { Code2Icon, GripVertical, Copy, Check, Terminal, Minus, Plus, Download, MoreVertical, Trash } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import SyntaxHighlighter from 'react-syntax-highlighter';
+import { nightOwl } from 'react-syntax-highlighter/dist/esm/styles/hljs';
+import { toast } from 'sonner'
+import { htmlWrapper } from '@/data/constants'
+import html2canvas from "html2canvas";
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import axios from 'axios';
+import { RefreshDataContext } from '@/context/RefreshDataContext';
+
+type Props = {
+    screen: ScreenConfigType,
+    theme:any,
+    iframeRef: any,
+    projectId: string
+}
+
+const ScreenHandler = ({screen, theme, iframeRef, projectId}: Props) => {
+  const [copied, setCopied] = React.useState(false)
+  const [fontSize, setFontSize] = useState(13)
+  const htmlCode = htmlWrapper(theme, screen?.code);
+  const {refreshData, setRefreshData} = useContext(RefreshDataContext)
+
+  const handleCopy = () => {
+    if (screen?.code) {
+      navigator.clipboard.writeText(htmlCode)
+      setCopied(true)
+      toast.success('Code copied to clipboard')
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+  // Memoize the code block so it doesn't re-render/re-parse on every font size change
+  const codeBlock = React.useMemo(() => (
+    <SyntaxHighlighter 
+        language="html" 
+        style={nightOwl}
+        showLineNumbers={true}
+        lineNumberStyle={{ color: '#7d909fff', minWidth: '2.5em' }}
+        customStyle={{
+            margin: 0,
+            padding: '10px',
+            fontSize: 'inherit', // Inherit from parent for smooth zoom
+            lineHeight: '1.6',
+            background: 'transparent',
+            fontFamily: '"Fira Code", "Fira Mono", monospace',
+            color:"#7d909fff",
+        }}
+    >
+        {htmlCode || ''}
+    </SyntaxHighlighter>
+  ), [screen?.code])
+
+  const takeIframeScreenshot = async () => {
+  const iframe = iframeRef.current;
+  if (!iframe) return;
+
+  try {
+    const doc = iframe.contentDocument;
+    if (!doc) return;
+
+    const body = doc.body;
+
+    // wait one frame to ensure layout is stable
+    await new Promise((res) => requestAnimationFrame(res));
+
+    const canvas = await html2canvas(body, {
+      backgroundColor: null,
+      useCORS: true,
+      scale: window.devicePixelRatio || 1,
+    });
+
+    const image = canvas.toDataURL("image/png");
+
+    // download automatically
+    const link = document.createElement("a");
+    link.href = image;
+    link.download = `${screen?.screenName as string || "screen"}.png`;
+    link.click();
+  } catch (err) {
+    console.error("Screenshot failed:", err);
+  }
+};
+
+ const onDelete = async () => {
+    const res = await axios.delete(`/api/generate-config?projectId=${projectId}&screenId=${screen?.screenId}`)
+    setRefreshData({method:'screenConfig', date:Date.now()})
+    toast.success("Screen deleted successfully")
+
+ }
+
+  return (
+    <div className='flex justify-between items-center w-full bg-white/60 backdrop-blur-md p-2 rounded-t-2xl border-b'>
+        <div className='drag-handle cursor-move flex items-center gap-2 ml-2'>
+            <GripVertical className='h-5 w-5 text-slate-400'/>
+            <h2 className='text-lg font-bold text-slate-700'>{screen?.screenName || 'Untitled Screen'}</h2>
+        </div>
+
+        <div className='flex items-center gap-1'>
+            <Dialog>
+                <DialogTrigger asChild>
+                    <Button 
+                        variant='ghost' 
+                        size='icon' 
+                        className='h-8 w-8 hover:bg-slate-100 rounded-lg transition-all group cursor-pointer'
+                    >
+                        <Code2Icon className='h-5 w-5 text-slate-500 group-hover:text-primary transition-colors'/>
+                    </Button>
+                </DialogTrigger>
+                {/* ... Dialog Content ... */}
+                <DialogContent className='sm:max-w-[70vw] h-[90vh] p-0 gap-0 overflow-hidden border-none bg-[#011627]'>
+                    <DialogHeader className='p-4 border-b border-slate-800 flex flex-row items-center justify-between bg-[#011627] z-10'>
+                        <div className='flex items-center gap-3'>
+                            <div className='flex gap-1.5 mr-2'>
+                                <div className='w-3 h-3 rounded-full bg-rose-500/80'/>
+                                <div className='w-3 h-3 rounded-full bg-amber-500/80'/>
+                                <div className='w-3 h-3 rounded-full bg-emerald-500/80'/>
+                            </div>
+                            <DialogTitle className='text-slate-300 text-sm font-medium flex items-center gap-2'>
+                                <Terminal className='w-4 h-4'/> {screen?.screenName}.html
+                            </DialogTitle>
+                        </div>
+                        
+                        <div className='flex items-center gap-4'>
+                            {/* Zoom Controls */}
+                            <div className='flex items-center bg-slate-800 rounded-lg p-1 border border-slate-700'>
+                                <Button 
+                                    variant='ghost' 
+                                    size='icon' 
+                                    className='h-7 w-7 text-slate-400 hover:text-slate-600'
+                                    onClick={() => setFontSize(prev => Math.max(prev - 1, 8))}
+                                >
+                                    <Minus className='w-3.5 h-3.5'/>
+                                </Button>
+                                <span className='text-[10px] font-bold text-slate-500 px-2 min-w-[3ch] text-center'>
+                                    {fontSize}px
+                                </span>
+                                <Button 
+                                    variant='ghost' 
+                                    size='icon' 
+                                    className='h-7 w-7 text-slate-400 hover:text-slate-600'
+                                    onClick={() => setFontSize(prev => Math.min(prev + 1, 24))}
+                                >
+                                    <Plus className='w-3.5 h-3.5'/>
+                                </Button>
+                            </div>
+
+                            <Button 
+                                variant='outline' 
+                                size='sm' 
+                                onClick={handleCopy}
+                                className='bg-transparent text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-300 transition-all h-8 gap-2 font-medium'
+                            >
+                                {copied ? <Check className='w-3.5 h-3.5'/> : <Copy className='w-3.5 h-3.5'/>}
+                                {copied ? 'Copied' : 'Copy Code'}
+                            </Button>
+                        </div>
+                    </DialogHeader>
+                    
+                    <div className='flex-1 overflow-auto bg-[#011627] relative custom-scrollbar transition-all duration-200' style={{ fontSize: `${fontSize}px` }}>
+                        {codeBlock}
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Button 
+                variant='ghost' 
+                size='icon'
+                className='h-10 w-10 cursor-pointer bg-transparent text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 transition-all'
+                onClick={takeIframeScreenshot}
+            >
+                <Download className='h-4 w-4'/>
+            </Button>
+
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost"><MoreVertical/></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem variant='destructive' className='text-white cursor-pointer' onClick={() => onDelete()}><Trash /> Delete</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+    </div>
+  )
+}
+
+export default ScreenHandler

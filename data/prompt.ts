@@ -31,10 +31,14 @@ OUTPUT JSON STRUCTURE:
 }
 
 SCREEN COUNT RULES:
-- If use says "one", return exactly 1 screen.
-- Otherwise return 1-4 screens.
-- If deviceType is "Mobile" or "Tablet" and user did NOT say "one": Screen 1 MUST be a Welcome / Onboarding screen.
+- If user specifies an exact count (e.g., "two screens", "3 pages", "only login"), you MUST return EXACTLY that many screens.
+- If no count is specified, return 1-4 screens based on the complexity of the request.
+- If deviceType is "Mobile" or "Tablet" and no specific screens are requested: Screen 1 MUST be a Welcome / Onboarding screen.
 - If deviceType is "Website" or "Desktop": Do NOT force onboarding unless specifically requested.
+
+NAMING CONSISTENCY:
+- Every screen generated MUST use the "projectName" defined in your JSON as its theme/brand name. 
+- Do NOT use different app names for different screens. If the app is "TaskMaster Pro", all screens must belong to "TaskMaster Pro".
 
 PROJECT VISUAL DESCRIPTION (GLOBAL DESIGN SYSTEM):
 - Before listing screens, define a complete global UI blueprint inside "projectVisualDescription".

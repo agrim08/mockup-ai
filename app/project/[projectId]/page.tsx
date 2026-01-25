@@ -8,10 +8,12 @@ import { ProjectType, ScreenConfigType } from '@/types/types'
 import Loading from '@/components/custom/Loading'
 import Canvas from '@/_shared/Canvas'
 import { SettingContext } from '@/context/SettingContext'
+import { RefreshDataContext } from '@/context/RefreshDataContext'
 
 const ProjectCanvasPlayground = () => {
   const [projectDetail, setProjectDetail] = useState<ProjectType>()
   const {settingDetails, setSettingDetails} = useContext(SettingContext)
+  const {refreshData, setRefreshData} = useContext(RefreshDataContext)
   const [loading, setLoading] = useState(true)
   const [loadingMsg, setLoadingMsg] = useState('')
   const [screenConfigOriginal, setScreenConfigOriginal] = useState<ScreenConfigType[]>([])
@@ -22,6 +24,12 @@ const ProjectCanvasPlayground = () => {
   useEffect(() => { 
       projectId && getProjectDetail()
   }, [projectId])
+
+  useEffect(() => {
+    if(refreshData?.method === 'screenConfig'){
+      getProjectDetail()
+    }
+  }, [refreshData])
 
   const getProjectDetail = async() => {
       setLoadingMsg('Loading Project Detail')
