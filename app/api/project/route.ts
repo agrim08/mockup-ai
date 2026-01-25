@@ -1,19 +1,36 @@
 import { db } from "@/config/db";
 import { ProjectsTable, ScreenConfigTable } from "@/config/schema";
-import { currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { and, eq, desc } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
     const { userInput, device, projectId, theme } = await request.json()
     const user = await currentUser()
+
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const email = user?.primaryEmailAddress?.emailAddress as string;
+    const { has } = await auth()
+    const hasPremium = has({ plan: 'pro' })
+
+    const projects = await db.select().from(ProjectsTable).where(eq(ProjectsTable.userId, email))
+    
+    if (projects.length >= 2 && !hasPremium) {
+        return NextResponse.json(
+            { error: 'Free tier limit reached. Upgrade to Pro for unlimited access.' }, 
+            { status: 403 }
+        )
+    }
     
     const res = await db.insert(ProjectsTable).values({
         projectId,
         userInput,
         device,
         theme,
-        userId: user?.primaryEmailAddress?.emailAddress as string,
+        userId: email,
     }).returning()
 
     return NextResponse.json(res[0])
@@ -59,10 +76,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-    const {  projectName, theme, projectId } = await req.json()    
+    const {  projectName, theme, logo, projectId } = await req.json()    
     const res = await db.update(ProjectsTable).set({
         projectName,
-        theme
+        theme,
+        logo
     }).where(eq(ProjectsTable.projectId, projectId as string)).returning()
 
     return NextResponse.json(res[0])

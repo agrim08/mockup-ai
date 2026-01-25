@@ -42,6 +42,7 @@ import { categories } from '@/data/constants'
 import axios from 'axios'
 import Loading from '@/components/custom/Loading'
 import { ProjectType } from '@/types/types'
+import { toast } from 'sonner'
 
 const Hero = () => {
   const router = useRouter()
@@ -87,15 +88,30 @@ const Hero = () => {
 
     const projectId = crypto.randomUUID()
     setLoading(true)
-    const res = await axios.post('/api/project', {
-      projectId,
-      userInput,
-      device: selectedCategory,
-      theme: selectedTheme
-    })  
     
-    router.push('/project/' + projectId)
-    setLoading(false)
+    try {
+      const res = await axios.post('/api/project', {
+        projectId,
+        userInput,
+        device: selectedCategory,
+        theme: selectedTheme
+      })  
+      
+      router.push('/project/' + projectId)
+    } catch (error: any) {
+      if (error?.response?.status === 403) {
+        toast.error(error.response.data.error, {
+          action: {
+            label: 'Upgrade',
+            onClick: () => router.push('/pricing')
+          }
+        })
+      } else {
+        toast.error("Failed to create project. Please try again.")
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
   const getColorClasses = (color: string) => {
@@ -268,46 +284,58 @@ const Hero = () => {
                   <div 
                     key={project.projectId}
                     onClick={() => router.push(`/project/${project.projectId}`)}
-                    className="group bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-3xl border border-slate-200/60 dark:border-slate-700/60 p-5 cursor-pointer hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 relative overflow-hidden"
+                    className="group bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-3xl border border-slate-200/60 dark:border-slate-700/60 p-0 cursor-pointer hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 relative overflow-hidden h-full flex flex-col"
                   >
-                    {/* Background Accent */}
-                    <div 
-                      className="absolute top-0 right-0 w-32 h-32 opacity-10 blur-2xl -mr-10 -mt-10 transition-all duration-500 group-hover:scale-150"
-                      style={{ background: themeColors?.primary }}
-                    />
-
-                    <div className="flex items-start justify-between mb-4 relative z-10">
-                      <div className="p-2.5 bg-slate-100 dark:bg-slate-700 rounded-2xl group-hover:bg-primary group-hover:text-white transition-colors duration-300">
-                        {project.device === 'MOBILE' ? <Smartphone className="w-5 h-5" /> : <Laptop className="w-5 h-5" />}
+                    {/* Project Preview Image */}
+                    <div className="h-40 w-full relative overflow-hidden border-b border-slate-100 dark:border-slate-700 group-hover:h-44 transition-all duration-500">
+                      {project.logo ? (
+                        <img 
+                          src={project.logo} 
+                          alt={project.projectName || 'Preview'} 
+                          className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110"
+                        />
+                      ) : (
+                        <div 
+                          className="w-full h-full opacity-30 blur-2xl transition-all duration-500 group-hover:scale-150"
+                          style={{ background: themeColors?.primary }}
+                        />
+                      )}
+                      
+                      {/* Device Badge Overlay */}
+                      <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 shadow-sm z-20">
+                         {project.device === 'MOBILE' ? <Smartphone className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" /> : <Laptop className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />}
+                         <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-tight">{project.device}</span>
                       </div>
-                      <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-800">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: themeColors?.primary }} />
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                          {project.theme?.replace('_', ' ')}
+
+                      {/* Theme Badge Overlay */}
+                      <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-2 py-1 rounded-xl border border-white/20 shadow-sm z-20">
+                        <div className="w-2 h-2 rounded-full" style={{ background: themeColors?.primary }} />
+                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase">
+                          {project.theme?.split('_')[0]}
                         </span>
                       </div>
                     </div>
 
-                    <div className="relative z-10">
-                      <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2 group-hover:text-primary transition-colors duration-300 truncate">
+                    <div className="p-5 flex flex-col flex-1 relative z-10 bg-white/10">
+                      <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1.5 group-hover:text-primary transition-colors duration-300 truncate">
                         {project.projectName || 'Untitled Project'}
                       </h3>
-                      <p className="text-slate-500 dark:text-slate-400 text-sm line-clamp-2 mb-4 leading-relaxed h-10">
+                      <p className="text-slate-500 dark:text-slate-400 text-xs line-clamp-2 mb-4 leading-relaxed h-8">
                         {project.userInput}
                       </p>
-                    </div>
 
-                    <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700/50 relative z-10">
-                      <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span className="text-[11px] font-medium">
-                          {new Date(project.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </span>
-                      </div>
-                      <div className="flex -space-x-1.5 overflow-hidden">
-                        {[themeColors?.primary, themeColors?.secondary, themeColors?.accent].map((color, i) => (
-                           <div key={i} className="w-5 h-5 rounded-full border-2 border-white dark:border-slate-800 shadow-sm" style={{ background: color }} />
-                        ))}
+                      <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700/50">
+                        <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500">
+                          <Calendar className="w-3 h-3" />
+                          <span className="text-[10px] font-medium">
+                            {new Date(project.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                        <div className="flex -space-x-1.5 overflow-hidden">
+                          {[themeColors?.primary, themeColors?.secondary, themeColors?.accent].map((color, i) => (
+                             <div key={i} className="w-4 h-4 rounded-full border-2 border-white dark:border-slate-800 shadow-sm" style={{ background: color }} />
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>

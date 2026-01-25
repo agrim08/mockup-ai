@@ -6,9 +6,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { SettingContext } from '@/context/SettingContext'
 import { THEME_NAME_LIST, THEMES } from '@/data/Theme'
 import { ProjectType } from '@/types/types'
-import { Camera, Share, Sparkle, ChevronLeft, ChevronRight, Layout, Palette, PlusCircle } from 'lucide-react'
+import { Camera, Share, Sparkle, ChevronLeft, ChevronRight, Layout, Palette, PlusCircle, Loader2 } from 'lucide-react'
 import React, { useContext, useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
+import html2canvas from 'html2canvas'
+import axios from 'axios'
+import { toast } from 'sonner'
 
 type Props={
   projectDetail: ProjectType | undefined
@@ -19,6 +22,7 @@ const ProjectSettings = ({projectDetail}: Props) => {
   const [projectName, setProjectName] = useState(projectDetail?.projectName)
   const [userInput, setUserInput] = useState('')
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCapturing, setIsCapturing] = useState(false)
   const {settingDetails, setSettingDetails} = useContext(SettingContext)
 
   useEffect(() => {
@@ -34,6 +38,90 @@ const ProjectSettings = ({projectDetail}: Props) => {
       ...prev,
       theme: theme
     }))
+  }
+
+  const handleScreenshot = async () => {
+    try {
+      setIsCapturing(true)
+      const iframes = document.querySelectorAll('iframe')
+      if (iframes.length === 0) {
+        toast.error("No screens found to capture")
+        setIsCapturing(false)
+        return
+      }
+
+      toast.loading("Capturing project preview...", { id: 'screenshot' })
+
+      const capturedImages: HTMLCanvasElement[] = []
+      
+      for (let i = 0; i < iframes.length; i++) {
+        const iframe = iframes[i]
+        const doc = iframe.contentDocument || iframe.contentWindow?.document
+        if (!doc) continue
+        
+        const body = doc.body
+        const canvas = await html2canvas(body, {
+          useCORS: true,
+          scale: 0.5, // Scale down for performance and storage
+          backgroundColor: '#ffffff'
+        })
+        capturedImages.push(canvas)
+      }
+
+      if (capturedImages.length === 0) {
+        toast.dismiss('screenshot')
+        setIsCapturing(false)
+        return
+      }
+
+      // Stitch images together
+      const gap = 40
+      const totalWidth = capturedImages.reduce((acc, canvas) => acc + canvas.width, 0) + (capturedImages.length - 1) * gap
+      const maxHeight = Math.max(...capturedImages.map(canvas => canvas.height))
+
+      const finalCanvas = document.createElement('canvas')
+      finalCanvas.width = totalWidth + 100 // Padding
+      finalCanvas.height = maxHeight + 100
+      const ctx = finalCanvas.getContext('2d')
+      if (!ctx) throw new Error("Could not get context")
+
+      // Fill background
+      ctx.fillStyle = '#f8fafc' // Slate 50
+      ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height)
+
+      let currentX = 50
+      capturedImages.forEach((canvas) => {
+        // Draw shadow
+        ctx.shadowColor = 'rgba(0,0,0,0.1)'
+        ctx.shadowBlur = 20
+        ctx.shadowOffsetX = 0
+        ctx.shadowOffsetY = 10
+        
+        ctx.drawImage(canvas, currentX, 50)
+        currentX += canvas.width + gap
+      })
+
+      const base64Image = finalCanvas.toDataURL('image/png')
+
+      // Download
+      const link = document.createElement('a')
+      link.href = base64Image
+      link.download = `${projectName || 'project'}-mockup.png`
+      link.click()
+
+      // Save to DB
+      await axios.put('/api/project', {
+        projectId: projectDetail?.projectId,
+        logo: base64Image
+      })
+
+      toast.success("Project screenshot saved and downloaded!", { id: 'screenshot' })
+    } catch (error) {
+      console.error("Screenshot error:", error)
+      toast.error("Failed to capture screenshot", { id: 'screenshot' })
+    } finally {
+      setIsCapturing(false)
+    }
   }
 
   return (
@@ -160,14 +248,26 @@ const ProjectSettings = ({projectDetail}: Props) => {
               <>
                 <h2 className='text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3'>Extras</h2>
                 <div className='flex gap-2'>
-                  <Button className='flex-1 cursor-pointer' variant={'outline'} size={'sm'}><Camera className='w-3.5 h-3.5 mr-2'/> Shot</Button>
+                  <Button 
+                    className='flex-1 cursor-pointer' 
+                    variant={'outline'} 
+                    size={'sm'}
+                    disabled={isCapturing}
+                    onClick={handleScreenshot}
+                  >
+                    {isCapturing ? <Loader2 className='w-3.5 h-3.5 animate-spin mr-2'/> : <Camera className='w-3.5 h-3.5 mr-2'/>}
+                    Shot
+                  </Button>
                   <Button className='flex-1 cursor-pointer' variant={'outline'} size={'sm'}><Share className='w-3.5 h-3.5 mr-2'/> Share</Button>
                 </div>
               </>
             ) : (
               <div className='flex flex-col items-center gap-4'>
-                 <div className='p-2 hover:bg-slate-50 rounded-lg group relative cursor-pointer'>
-                  <Camera className='w-5 h-5 text-slate-500'/>
+                 <div 
+                  className='p-2 hover:bg-slate-50 rounded-lg group relative cursor-pointer'
+                  onClick={handleScreenshot}
+                 >
+                  {isCapturing ? <Loader2 className='w-5 h-5 animate-spin text-slate-500'/> : <Camera className='w-5 h-5 text-slate-500'/>}
                   <div className='absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl'>
                     Take Screenshot
                   </div>

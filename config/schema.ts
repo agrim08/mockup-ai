@@ -18,6 +18,7 @@ export const ProjectsTable = pgTable('project', {
   projectVisualDescription: text(),
   theme: varchar(),
   projectName: varchar(),
+  logo: text(),
 })
 
 export const ScreenConfigTable = pgTable('screenConfig', {

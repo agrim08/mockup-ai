@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react'
 import { ScreenConfigType } from '@/types/types'
-import { Code2Icon, GripVertical, Copy, Check, Terminal, Minus, Plus, Download, MoreVertical, Trash, SparkleIcon, Loader2 } from 'lucide-react'
+import { Code2Icon, GripVertical, Copy, Check, Terminal, Minus, Plus, Download, MoreVertical, Trash, SparkleIcon, Loader2, Lock } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -12,8 +12,11 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 import { nightOwl } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { toast } from 'sonner'
 import { htmlWrapper } from '@/data/constants'
+import { cn } from '@/lib/utils'
 import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button"
+import { useAuth } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +46,10 @@ type Props = {
 }
 
 const ScreenHandler = ({screen, theme, iframeRef, projectId, projectVisualDescription}: Props) => {
+  const { has } = useAuth();
+  const router = useRouter();
+  const isPro = has ? has({ plan: 'pro' }) : false;
+
   const [copied, setCopied] = React.useState(false)
   const [fontSize, setFontSize] = useState(13)
   const htmlCode = htmlWrapper(theme, screen?.code);
@@ -136,6 +143,19 @@ const ScreenHandler = ({screen, theme, iframeRef, projectId, projectVisualDescri
 
  }
 
+  const handleSourceCodeClick = (e: React.MouseEvent) => {
+    if (!isPro) {
+      e.preventDefault();
+      toast.error("Source code is a Premium Feature", {
+        description: "Upgrade to Pro to view and export your screen source code.",
+        action: {
+          label: "Upgrade",
+          onClick: () => router.push('/pricing')
+        }
+      })
+    }
+  }
+
   return (
     <div className='flex justify-between items-center w-full bg-white/70 backdrop-blur-md p-4 rounded-t-2xl border-b border-slate-200'>
         <div className='drag-handle cursor-move flex items-center gap-3 ml-2'>
@@ -148,9 +168,15 @@ const ScreenHandler = ({screen, theme, iframeRef, projectId, projectVisualDescri
                 <DialogTrigger asChild>
                     <Button 
                         variant='ghost' 
-                        className='!h-12 !w-12 hover:bg-slate-200/50 rounded-xl transition-all group flex items-center justify-center'
+                        onClick={handleSourceCodeClick}
+                        className='!h-12 !w-12 hover:bg-slate-200/50 rounded-xl transition-all group flex items-center justify-center relative'
                     >
-                        <Code2Icon className='!h-6 !w-6 text-slate-600 group-hover:text-primary transition-colors' size={24} />
+                        <Code2Icon className={cn('!h-6 !w-6 transition-colors', isPro ? 'text-slate-600 group-hover:text-primary' : 'text-slate-400')} size={24} />
+                        {!isPro && (
+                          <div className='absolute -top-1 -right-1 bg-white dark:bg-slate-900 rounded-full p-0.5 shadow-sm border border-slate-100'>
+                            <Lock className='w-3 h-3 text-rose-500' />
+                          </div>
+                        )}
                     </Button>
                 </DialogTrigger>
                 {/* ... Dialog Content ... */}

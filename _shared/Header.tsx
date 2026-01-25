@@ -83,7 +83,46 @@ const Header = () => {
                   </svg>
                 </span>
               </Button>
-            </Link> : <UserButton/>}
+            </Link> : (
+              <UserButton 
+                userProfileProps={{
+                  appearance: {
+                    variables: {
+                      colorPrimary: '#f43f5e',
+                      colorText: '#1e293b',
+                      borderRadius: '1rem',
+                      fontFamily: 'inherit'
+                    },
+                    elements: {
+                      card: "rounded-3xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden",
+                      navbar: "border-r border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50",
+                      navbarButton: "hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors uppercase text-[10px] font-bold tracking-widest",
+                      headerTitle: "text-2xl font-bold text-slate-900 dark:text-white mb-2",
+                      headerSubtitle: "text-slate-500 dark:text-slate-400",
+                      pageScrollBox: "p-8",
+                      profileSectionTitle: "text-lg font-bold text-slate-800 dark:text-slate-200 border-b pb-2 mb-4",
+                    }
+                  }
+                }}
+                appearance={{
+                  variables: {
+                    colorPrimary: '#f43f5e',
+                    colorText: '#1e293b',
+                    borderRadius: '1rem',
+                  },
+                  elements: {
+                    userButtonAvatarBox: "h-11 w-11 border-2 border-slate-100 dark:border-slate-800 transition-all hover:scale-110 shadow-sm",
+                    userButtonTrigger: "focus:shadow-none focus:outline-none ring-offset-2 ring-primary/20",
+                    userButtonPopoverCard: "shadow-2xl rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl",
+                    userPreviewMainIdentifier: "font-bold text-slate-900 dark:text-white",
+                    userPreviewSecondaryIdentifier: "text-slate-500 text-xs",
+                    userButtonPopoverActionButton: "hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors px-4 py-3",
+                    userButtonPopoverActionButtonText: "text-slate-700 dark:text-slate-200 font-medium",
+                    userButtonPopoverFooter: "hidden", // Clean up the footer
+                  }
+                }}
+              />
+            )}
           </div>
 
           {/* Mobile Menu Button */}
