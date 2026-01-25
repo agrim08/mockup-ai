@@ -19,7 +19,7 @@ import {
   InputGroupTextarea,
   InputGroupButton,
 } from "@/components/ui/input-group"
-import {
+import { 
   Plane, 
   GraduationCap, 
   Wallet, 
@@ -30,14 +30,18 @@ import {
   Sparkles,
   Send,
   ArrowRightIcon,
-  Loader2
+  Loader2,
+  Laptop,
+  Smartphone,
+  Calendar
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
-import { THEME_NAME_LIST } from '@/data/Theme'
+import { THEME_NAME_LIST, THEMES } from '@/data/Theme'
 import { categories } from '@/data/constants'
 import axios from 'axios'
 import Loading from '@/components/custom/Loading'
+import { ProjectType } from '@/types/types'
 
 const Hero = () => {
   const router = useRouter()
@@ -46,6 +50,26 @@ const Hero = () => {
   const [selectedTheme, setSelectedTheme] = useState<string>(THEME_NAME_LIST[0])
   const [userInput, setUserInput] = useState<string>()
   const [loading, setLoading] = useState(false)
+  const [userProjects, setUserProjects] = useState<ProjectType[]>([])
+  const [fetchingProjects, setFetchingProjects] = useState(false)
+
+  React.useEffect(() => {
+    if (user) {
+      fetchUserProjects()
+    }
+  }, [user])
+
+  const fetchUserProjects = async () => {
+    setFetchingProjects(true)
+    try {
+      const res = await axios.get('/api/project')
+      setUserProjects(res.data)
+    } catch (error) {
+      console.error("Error fetching projects:", error)
+    } finally {
+      setFetchingProjects(false)
+    }
+  }
 
   const handleSubmit = async () => {
     if (!isLoaded) {
@@ -217,11 +241,88 @@ const Hero = () => {
         </div>
 
         {/* Your Projects Section */}
-        <div className="animate-slide-up-fade" style={{ animationDelay: '800ms' }}>
-          <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-300 mb-4">Your Projects</h2>
-          <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-8 text-center hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-300">
-            <p className="text-slate-400 dark:text-slate-500">No projects yet. Start creating your first mockup!</p>
+        <div className="animate-slide-up-fade mb-20" style={{ animationDelay: '800ms' }}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-rose-500" />
+              Your Projects
+            </h2>
+            {userProjects.length > 0 && (
+              <span className="text-sm text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full font-medium">
+                {userProjects.length} Projects
+              </span>
+            )}
           </div>
+          
+          {fetchingProjects ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-48 bg-slate-100 dark:bg-slate-800 rounded-3xl animate-pulse border border-slate-200/50 dark:border-slate-700/50" />
+              ))}
+            </div>
+          ) : userProjects.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {userProjects.map((project, index) => {
+                const themeColors = THEMES[project.theme as keyof typeof THEMES]
+                return (
+                  <div 
+                    key={project.projectId}
+                    onClick={() => router.push(`/project/${project.projectId}`)}
+                    className="group bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-3xl border border-slate-200/60 dark:border-slate-700/60 p-5 cursor-pointer hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 relative overflow-hidden"
+                  >
+                    {/* Background Accent */}
+                    <div 
+                      className="absolute top-0 right-0 w-32 h-32 opacity-10 blur-2xl -mr-10 -mt-10 transition-all duration-500 group-hover:scale-150"
+                      style={{ background: themeColors?.primary }}
+                    />
+
+                    <div className="flex items-start justify-between mb-4 relative z-10">
+                      <div className="p-2.5 bg-slate-100 dark:bg-slate-700 rounded-2xl group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+                        {project.device === 'MOBILE' ? <Smartphone className="w-5 h-5" /> : <Laptop className="w-5 h-5" />}
+                      </div>
+                      <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-800">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: themeColors?.primary }} />
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                          {project.theme?.replace('_', ' ')}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="relative z-10">
+                      <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2 group-hover:text-primary transition-colors duration-300 truncate">
+                        {project.projectName || 'Untitled Project'}
+                      </h3>
+                      <p className="text-slate-500 dark:text-slate-400 text-sm line-clamp-2 mb-4 leading-relaxed h-10">
+                        {project.userInput}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700/50 relative z-10">
+                      <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span className="text-[11px] font-medium">
+                          {new Date(project.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </div>
+                      <div className="flex -space-x-1.5 overflow-hidden">
+                        {[themeColors?.primary, themeColors?.secondary, themeColors?.accent].map((color, i) => (
+                           <div key={i} className="w-5 h-5 rounded-full border-2 border-white dark:border-slate-800 shadow-sm" style={{ background: color }} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 p-12 text-center hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-300 group">
+              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                <Sparkles className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-1">No projects found</h3>
+              <p className="text-slate-400 dark:text-slate-500">Transform your creative spark into a stunning mockup right now!</p>
+            </div>
+          )}
         </div>
       </div>
     </section>

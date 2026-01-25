@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react'
 import { ScreenConfigType } from '@/types/types'
-import { Code2Icon, GripVertical, Copy, Check, Terminal, Minus, Plus, Download, MoreVertical, Trash } from 'lucide-react'
+import { Code2Icon, GripVertical, Copy, Check, Terminal, Minus, Plus, Download, MoreVertical, Trash, SparkleIcon, Loader2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -25,19 +25,49 @@ import {
 } from "@/components/ui/dropdown-menu"
 import axios from 'axios';
 import { RefreshDataContext } from '@/context/RefreshDataContext';
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Textarea } from '@/components/ui/textarea';
 
 type Props = {
     screen: ScreenConfigType,
     theme:any,
     iframeRef: any,
-    projectId: string
+    projectId: string,
+    projectVisualDescription: string | undefined
 }
 
-const ScreenHandler = ({screen, theme, iframeRef, projectId}: Props) => {
+const ScreenHandler = ({screen, theme, iframeRef, projectId, projectVisualDescription}: Props) => {
   const [copied, setCopied] = React.useState(false)
   const [fontSize, setFontSize] = useState(13)
   const htmlCode = htmlWrapper(theme, screen?.code);
   const {refreshData, setRefreshData} = useContext(RefreshDataContext)
+  const [userInput, setUserInput] = useState<string>('')
+  const [loading, setLoading] = useState(false)
+
+  const handleRegenerate = async () => {
+    try {
+        setLoading(true)
+        const res = await axios.post('/api/edit-screen', {
+            projectId: projectId,
+            screenId: screen?.screenId,
+            oldCode: screen?.code,
+            userInput: userInput,
+            projectVisualDescription: projectVisualDescription
+        })
+        setLoading(false)
+        setRefreshData({method:'screenConfig', date:Date.now()})
+        toast.success("Screen regenerated successfully")
+    } catch (error) {
+        setLoading(false)
+        toast.error("Failed to regenerate screen")
+    }
+  }
 
   const handleCopy = () => {
     if (screen?.code) {
@@ -97,7 +127,7 @@ const ScreenHandler = ({screen, theme, iframeRef, projectId}: Props) => {
   } catch (err) {
     console.error("Screenshot failed:", err);
   }
-};
+  };
 
  const onDelete = async () => {
     const res = await axios.delete(`/api/generate-config?projectId=${projectId}&screenId=${screen?.screenId}`)
@@ -107,21 +137,20 @@ const ScreenHandler = ({screen, theme, iframeRef, projectId}: Props) => {
  }
 
   return (
-    <div className='flex justify-between items-center w-full bg-white/60 backdrop-blur-md p-2 rounded-t-2xl border-b'>
-        <div className='drag-handle cursor-move flex items-center gap-2 ml-2'>
+    <div className='flex justify-between items-center w-full bg-white/70 backdrop-blur-md p-4 rounded-t-2xl border-b border-slate-200'>
+        <div className='drag-handle cursor-move flex items-center gap-3 ml-2'>
             <GripVertical className='h-5 w-5 text-slate-400'/>
-            <h2 className='text-lg font-bold text-slate-700'>{screen?.screenName || 'Untitled Screen'}</h2>
+            <h2 className='text-xl font-bold text-slate-800 tracking-tight'>{screen?.screenName || 'Untitled Screen'}</h2>
         </div>
 
-        <div className='flex items-center gap-1'>
+        <div className='flex items-center gap-3 mr-2'>
             <Dialog>
                 <DialogTrigger asChild>
                     <Button 
                         variant='ghost' 
-                        size='icon' 
-                        className='h-8 w-8 hover:bg-slate-100 rounded-lg transition-all group cursor-pointer'
+                        className='!h-12 !w-12 hover:bg-slate-200/50 rounded-xl transition-all group flex items-center justify-center'
                     >
-                        <Code2Icon className='h-5 w-5 text-slate-500 group-hover:text-primary transition-colors'/>
+                        <Code2Icon className='!h-6 !w-6 text-slate-600 group-hover:text-primary transition-colors' size={24} />
                     </Button>
                 </DialogTrigger>
                 {/* ... Dialog Content ... */}
@@ -182,16 +211,33 @@ const ScreenHandler = ({screen, theme, iframeRef, projectId}: Props) => {
 
             <Button 
                 variant='ghost' 
-                size='icon'
-                className='h-10 w-10 cursor-pointer bg-transparent text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 transition-all'
+                className='!h-12 !w-12 cursor-pointer bg-transparent text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-600 transition-all flex items-center justify-center'
                 onClick={takeIframeScreenshot}
             >
-                <Download className='h-4 w-4'/>
+                <Download className='!h-6 !w-6' size={24} />
             </Button>
+            <Popover>
+                <PopoverTrigger asChild>
+                    <Button variant='ghost' className='!h-12 !w-12 cursor-pointer bg-transparent text-indigo-500 hover:bg-indigo-500/10 hover:text-indigo-600 transition-all flex items-center justify-center' >
+                        <SparkleIcon className='!h-6 !w-6' size={24} />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent>
+                    <PopoverHeader>
+                    <PopoverDescription className='mb-2 ml-1'>Edit Screen</PopoverDescription>
+                    </PopoverHeader>
+                    <div>
+                        <Textarea placeholder='What changes do you want?' value={userInput} onChange={(e) => setUserInput(e.target.value)}/>
+                        <Button className='mt-2' size={'sm'} onClick={() => handleRegenerate()} disabled={loading}>{loading ? <Loader2 className='h-4 w-4 animate-spin'/> : <SparkleIcon className='h-4 w-4 mr-2'/>}Regenerate</Button>
+                    </div>
+                </PopoverContent>
+            </Popover>
 
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost"><MoreVertical/></Button>
+                    <Button variant="ghost" className='!h-12 !w-12 cursor-pointer bg-transparent text-slate-500 hover:bg-slate-200/50 transition-all flex items-center justify-center'>
+                        <MoreVertical className='!h-6 !w-6' size={24} />
+                    </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                     <DropdownMenuItem variant='destructive' className='text-white cursor-pointer' onClick={() => onDelete()}><Trash /> Delete</DropdownMenuItem>

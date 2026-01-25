@@ -38,7 +38,7 @@ const ScreenFrame = ({x, y, setPanningEnabled, width, height, html, projectDetai
             const doc = iframe.contentDocument;
             if (!doc) return;
 
-            const headerH = 50;
+            const headerH = 85;
             const htmlEl = doc.documentElement;
             const body = doc.body;
 
@@ -130,10 +130,16 @@ const ScreenFrame = ({x, y, setPanningEnabled, width, height, html, projectDetai
         }}
     >
 
-        <ScreenHandler screen={screen} theme={themeObj} iframeRef={iframeRef} projectId={projectDetail?.projectId as string}/>
+        <ScreenHandler 
+            screen={screen} 
+            theme={themeObj} 
+            iframeRef={iframeRef} 
+            projectId={projectDetail?.projectId as string}
+            projectVisualDescription={projectDetail?.projectVisualDescription as string}
+        />
         <iframe 
             ref={iframeRef}
-            className='w-full bg-white h-[calc(100%-52px)] rounded-b-2xl'
+            className='w-full bg-white h-[calc(100%-85px)] rounded-b-2xl'
             sandbox='allow-same-origin allow-scripts'
             srcDoc={htmlCode}
         />

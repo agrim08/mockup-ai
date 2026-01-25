@@ -6,7 +6,8 @@ export type ProjectType = {
     userInput: string,
     createdAt: string,
     projectName?: string,
-    theme?: string
+    theme?: string,
+    projectVisualDescription?: string
 }
 
 export type ScreenConfigType = {
