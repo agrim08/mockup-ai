@@ -1,7 +1,8 @@
+import { SettingContext } from '@/context/SettingContext';
 import { THEMES, themeToCssVars } from '@/data/Theme';
 import { ProjectType } from '@/types/types';
 import { GripVertical } from 'lucide-react';
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { Rnd } from 'react-rnd'
 
 interface Props {
@@ -16,8 +17,8 @@ interface Props {
 
 const ScreenFrame = ({x, y, setPanningEnabled, width, height, html, projectDetail}: Props) => {
 
-    const selectedTheme = projectDetail?.theme as any;
-    const themeObj = THEMES[selectedTheme as keyof typeof THEMES] || THEMES.AURORA_INK;
+    const {settingDetails} = useContext(SettingContext)
+    const themeObj = THEMES[settingDetails?.theme as keyof typeof THEMES ?? projectDetail?.theme as keyof typeof THEMES];
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
     const [size, setSize] = useState({ width, height });
 

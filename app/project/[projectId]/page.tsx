@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import ProjectHeader from './_shared/ProjectHeader'
 import ProjectSettings from './_shared/ProjectSettings'
 import axios from 'axios'
@@ -7,9 +7,11 @@ import { useParams } from 'next/navigation'
 import { ProjectType, ScreenConfigType } from '@/types/types'
 import Loading from '@/components/custom/Loading'
 import Canvas from '@/_shared/Canvas'
+import { SettingContext } from '@/context/SettingContext'
 
 const ProjectCanvasPlayground = () => {
   const [projectDetail, setProjectDetail] = useState<ProjectType>()
+  const {settingDetails, setSettingDetails} = useContext(SettingContext)
   const [loading, setLoading] = useState(true)
   const [loadingMsg, setLoadingMsg] = useState('')
   const [screenConfigOriginal, setScreenConfigOriginal] = useState<ScreenConfigType[]>([])
@@ -27,9 +29,9 @@ const ProjectCanvasPlayground = () => {
       const res = await axios.get('/api/project?projectId=' + projectId)
       console.log(res?.data)
       setProjectDetail(res?.data.projectDetails)
+      setSettingDetails(res?.data.projectDetails)
       setScreenConfigOriginal(res?.data.screenConfig)
       setScreenConfig(res?.data.screenConfig)
-
       setLoading(false)
   }
 
@@ -91,12 +93,14 @@ const ProjectCanvasPlayground = () => {
   }
 
   return (
-    <div className='pt-15'>
+    <div className='h-screen flex flex-col'>
         <ProjectHeader />
-        <div className="flex">
+        <div className="flex flex-1 overflow-hidden">
           <Loading loading={loading} message={loadingMsg} />
           <ProjectSettings projectDetail={projectDetail}/>
-          <Canvas projectDetail={projectDetail} screenConfig={screenConfig} loading={loading}/>
+          <div className="flex-1 transition-all duration-300 overflow-hidden">
+            <Canvas projectDetail={projectDetail} screenConfig={screenConfig} loading={loading}/>
+          </div>
         </div>
     </div>
   )

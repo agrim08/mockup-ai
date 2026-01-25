@@ -1,15 +1,17 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Menu, X, Sparkles } from 'lucide-react'
 import { UserButton, useUser } from '@clerk/nextjs'
 import Logo from '@/data/Logo'
+import { SettingContext } from '@/context/SettingContext'
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const {settingDetails, setSettingDetails} = useContext(SettingContext)
   const {user} = useUser()
 
   useEffect(() => {

@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import Provider from "./provider";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -28,6 +29,7 @@ export default function RootLayout({
         <Provider>
             {children}
         </Provider>
+        <Toaster position="top-right" richColors />
       </body>
     </html>
     </ClerkProvider>

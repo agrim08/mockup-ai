@@ -44,3 +44,13 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
     }
 }
+
+export async function PUT(req: NextRequest) {
+    const {  projectName, theme, projectId } = await req.json()    
+    const res = await db.update(ProjectsTable).set({
+        projectName,
+        theme
+    }).where(eq(ProjectsTable.projectId, projectId as string)).returning()
+
+    return NextResponse.json(res[0])
+}
