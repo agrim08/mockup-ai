@@ -1,8 +1,9 @@
 'use client'
 
-import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
-import React, { useState } from 'react'
+import { TransformWrapper, TransformComponent, useControls, ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
+import React, { useState, useRef, useEffect } from 'react'
 import ScreenFrame from "./ScreenFrame";
+import ScreenSkeleton from "./ScreenSkeleton";
 import { ProjectType, ScreenConfigType } from "@/types/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Minus, Plus, RefreshCcw, Layout } from "lucide-react";
@@ -13,14 +14,35 @@ type Props = {
     projectDetail: ProjectType | undefined;
     screenConfig: ScreenConfigType[];
     loading?: boolean;
+    generatingScreenId?: string | null;
 }
 
-const Canvas = ({projectDetail, screenConfig, loading}: Props) => {
+const Canvas = ({projectDetail, screenConfig, loading, generatingScreenId}: Props) => {
   const [panningEnabled, setPanningEnabled] = useState(true);
   const isMobile = projectDetail?.device === 'MOBILE';
   const SCREEN_WIDTH = isMobile ? 400 : 1200;
   const SCREEN_HEIGHT = isMobile ? 844 : 900;
   const gap = isMobile ? 10 : 70;
+  const transformRef = useRef<ReactZoomPanPinchRef>(null);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'NAVIGATE_TO_SCREEN') {
+        const targetScreenId = event.data.targetScreenId;
+        const index = screenConfig.findIndex(s => s.screenId === targetScreenId);
+        if (index !== -1) {
+          const scale = 0.6;
+          const xPos = -(index * (SCREEN_WIDTH + gap)) * scale + 150;
+          transformRef.current?.setTransform(xPos, 50, scale, 300);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [screenConfig, SCREEN_WIDTH, gap]);
 
   const Controls = () => {
     const { zoomIn, zoomOut, resetTransform } = useControls();
@@ -88,6 +110,7 @@ const Canvas = ({projectDetail, screenConfig, loading}: Props) => {
         }}
     >
         <TransformWrapper
+            ref={transformRef}
             initialScale={0.5}
             minScale={0.05}
             maxScale={3}
@@ -118,33 +141,15 @@ const Canvas = ({projectDetail, screenConfig, loading}: Props) => {
                                 screen={screen}
                             />
                         ) : (
-                            <div
-                                className="bg-white rounded-[2.5rem] p-8 absolute shadow-xl border border-slate-100 overflow-hidden"
-                                style={{
-                                    width: SCREEN_WIDTH,
-                                    height: SCREEN_HEIGHT,
-                                    left: index * (SCREEN_WIDTH + gap),
-                                    top: 0,
-                                }}
-                            >
-                                <div className="flex items-center justify-between mb-8">
-                                    <Skeleton className="h-6 w-32 rounded-full" />
-                                    <Skeleton className="h-10 w-10 rounded-full" />
-                                </div>
-                                <Skeleton className="h-[200px] w-full rounded-3xl mb-8" />
-                                <div className="space-y-4">
-                                    <Skeleton className="h-4 w-full rounded-full" />
-                                    <Skeleton className="h-4 w-4/5 rounded-full" />
-                                    <Skeleton className="h-4 w-2/3 rounded-full" />
-                                </div>
-                                <div className="mt-12 grid grid-cols-2 gap-6">
-                                    <Skeleton className="h-32 rounded-3xl" />
-                                    <Skeleton className="h-32 rounded-3xl" />
-                                </div>
-                                <div className="absolute bottom-8 left-8 right-8">
-                                    <Skeleton className="h-14 w-full rounded-2xl" />
-                                </div>
-                            </div>
+                            <ScreenSkeleton
+                                x={index * (SCREEN_WIDTH + gap)}
+                                y={0}
+                                width={SCREEN_WIDTH}
+                                height={SCREEN_HEIGHT}
+                                screenName={screen.screenName}
+                                purpose={screen.purpose}
+                                isGenerating={generatingScreenId === screen.screenId}
+                            />
                         )}
                     </React.Fragment>
                 ))}

@@ -33,7 +33,9 @@ import {
   Loader2,
   Laptop,
   Smartphone,
-  Calendar
+  Calendar,
+  Image as ImageIcon,
+  X
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
@@ -43,20 +45,28 @@ import axios from 'axios'
 import Loading from '@/components/custom/Loading'
 import { ProjectType } from '@/types/types'
 import { toast } from 'sonner'
+import ThemeBuilder from '@/components/custom/ThemeBuilder'
+import { parseTheme } from '@/data/Theme'
 
 const Hero = () => {
   const router = useRouter()
   const { user, isLoaded } = useUser()
-  const [selectedCategory, setSelectedCategory] = useState('Website')
+  const [selectedCategory, setSelectedCategory] = useState('WEBSITE')
   const [selectedTheme, setSelectedTheme] = useState<string>(THEME_NAME_LIST[0])
   const [userInput, setUserInput] = useState<string>()
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [userProjects, setUserProjects] = useState<ProjectType[]>([])
   const [fetchingProjects, setFetchingProjects] = useState(false)
+  const [customThemes, setCustomThemes] = useState<{themeName: string, themeData: string}[]>([])
+  const [isThemeBuilderOpen, setIsThemeBuilderOpen] = useState(false)
 
   React.useEffect(() => {
     if (user) {
       fetchUserProjects()
+      fetchCustomThemes()
     }
   }, [user])
 
@@ -72,17 +82,33 @@ const Hero = () => {
     }
   }
 
-  const handleSubmit = async () => {
-    if (!isLoaded) {
-      return
+  const fetchCustomThemes = async () => {
+    try {
+      const res = await axios.get('/api/user/themes')
+      setCustomThemes(res.data)
+    } catch (error) {
+      console.error("Error fetching custom themes:", error)
     }
+  }
+
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = (error) => reject(error)
+    })
+  }
+
+  const handleSubmit = async () => {
+    if (!isLoaded) return
     
     if (!user) {
       router.push('/sign-in')
       return
     }
     
-    if (!userInput || userInput.trim() === '') {        
+    if ((!userInput || userInput.trim() === '') && !imageFile) {        
       return
     }
 
@@ -90,17 +116,32 @@ const Hero = () => {
     setLoading(true)
     
     try {
-      const res = await axios.post('/api/project', {
+      // 1. Create project in DB (handles auth & tier limits)
+      await axios.post('/api/project', {
         projectId,
-        userInput,
+        userInput: userInput || 'Generate UI from sketch',
         device: selectedCategory,
         theme: selectedTheme
-      })  
+      })
       
+      // 2. If image, generate config from image now
+      if (imageFile) {
+        const base64Image = await convertToBase64(imageFile)
+        await axios.post('/api/generate-from-image', {
+          projectId,
+          userInput: userInput || 'Generate a UI based on this image',
+          device: selectedCategory,
+          theme: selectedTheme,
+          imageBase64: base64Image
+        })
+      }
+      
+      // 3. Navigate
       router.push('/project/' + projectId)
-    } catch (error: any) {
-      if (error?.response?.status === 403) {
-        toast.error(error.response.data.error, {
+    } catch (error) {
+      const err = error as { response?: { status?: number; data?: { error?: string } } }
+      if (err?.response?.status === 403) {
+        toast.error(err.response.data?.error || "Tier limit reached", {
           action: {
             label: 'Upgrade',
             onClick: () => router.push('/pricing')
@@ -111,6 +152,22 @@ const Hero = () => {
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setImageFile(file)
+      setImagePreview(URL.createObjectURL(file))
+    }
+  }
+
+  const clearImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
     }
   }
 
@@ -129,7 +186,6 @@ const Hero = () => {
 
   return (
     <section className="relative pb-20 px-4 sm:px-6 lg:px-8 p-10 mt-20 md:px-24 lg:px-48 xl:px-60">
-      <Loading loading={loading} message={'Creating your project...'} />
       {/* Subtle Background Pattern */}
       <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#374151_1px,transparent_1px)] bg-[size:20px_20px] opacity-40 pointer-events-none"></div>
       
@@ -166,18 +222,41 @@ const Hero = () => {
 
         {/* Search Section */}
         <div className="max-w-3xl mx-auto mb-16 animate-slide-up-fade" style={{ animationDelay: '300ms' }}>
-          <InputGroup className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl rounded-2xl shadow-md border-slate-200/60 dark:border-slate-700/60 hover:shadow-lg transition-all duration-300 h-auto p-4">
+          <InputGroup className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl rounded-2xl shadow-md border-slate-200/60 dark:border-slate-700/60 hover:shadow-lg transition-all duration-300 h-auto p-4 flex-col">
+            
+            {/* Image Preview Area */}
+            {imagePreview && (
+              <div className="relative w-24 h-24 mb-3 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 group">
+                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                <button 
+                  onClick={clearImage}
+                  className="absolute top-1 right-1 bg-black/50 hover:bg-black/80 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
             {/* Main Textarea */}
             <InputGroupTextarea 
-              placeholder="Enter what design you want to create"
+              placeholder="Enter what design you want to create or upload a sketch..."
               rows={2}
-              className="text-base resize-none"
+              className="text-base resize-none border-0 focus-visible:ring-0 p-0 mb-2 bg-transparent"
               value={userInput}
               onChange={(e) => setUserInput(e?.target?.value)}
             />
             
+            {/* Hidden File Input */}
+            <input 
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              ref={fileInputRef} 
+              onChange={handleImageChange}
+            />
+
             {/* Bottom Section with Selectors and Submit */}
-            <InputGroupAddon align="block-end" className="border-t border-slate-200 dark:border-slate-700">
+            <InputGroupAddon align="block-end" className="border-t border-slate-200 dark:border-slate-700 pt-3 w-full">
               <div className="flex items-center justify-between w-full gap-2 md:gap-4 mt-2">
                 <div className='flex items-center gap-2'>
                   {/* Device Selector */}
@@ -195,7 +274,17 @@ const Hero = () => {
 
                   {/* Theme Selector */}
                   <div className="flex-shrink-0">
-                    <Select value={selectedTheme} onValueChange={(val) => setSelectedTheme(val)} defaultValue={THEME_NAME_LIST[0]}>
+                    <Select 
+                      value={selectedTheme} 
+                      onValueChange={(val) => {
+                        if (val === 'OPEN_THEME_BUILDER') {
+                          setIsThemeBuilderOpen(true)
+                        } else {
+                          setSelectedTheme(val)
+                        }
+                      }} 
+                      defaultValue={THEME_NAME_LIST[0]}
+                    >
                       <SelectTrigger className="h-10 w-32 md:w-40 bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200">
                         <SelectValue placeholder="Theme" />
                       </SelectTrigger>
@@ -205,9 +294,27 @@ const Hero = () => {
                             {theme.split('_').map(word => word.charAt(0) + word.slice(1).toLowerCase()).join(' ')}
                           </SelectItem>
                         ))}
+                        {customThemes.map((theme) => (
+                          <SelectItem key={theme.themeData} value={theme.themeData}>
+                            ✨ {theme.themeName}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="OPEN_THEME_BUILDER" className="text-rose-500 font-medium border-t border-slate-100 dark:border-slate-800 mt-1 pt-2">
+                          ➕ Create Brand Theme...
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Image Upload Button */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 px-3 bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <ImageIcon className="w-5 h-5" />
+                  </Button>
                 </div>
 
                 <Button
@@ -353,6 +460,17 @@ const Hero = () => {
           )}
         </div>
       </div>
+
+      <ThemeBuilder 
+        isOpen={isThemeBuilderOpen} 
+        onClose={() => setIsThemeBuilderOpen(false)} 
+        baseTheme={parseTheme(selectedTheme)}
+        onSave={(newThemeJson) => {
+          setSelectedTheme(newThemeJson)
+          // Refetch themes list
+          fetchCustomThemes()
+        }}
+      />
     </section>
   )
 }

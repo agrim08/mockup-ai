@@ -37,10 +37,12 @@ import {
 } from "@/components/ui/popover"
 import { Textarea } from '@/components/ui/textarea';
 
+import { Theme } from '@/data/Theme'
+
 type Props = {
     screen: ScreenConfigType,
-    theme:any,
-    iframeRef: any,
+    theme: Theme,
+    iframeRef: React.RefObject<HTMLIFrameElement | null>,
     projectId: string,
     projectVisualDescription: string | undefined
 }
