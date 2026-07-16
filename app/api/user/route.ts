@@ -1,30 +1,23 @@
-import { db } from "@/config/db";
-import { usersTable } from "@/config/schema";
 import { currentUser } from "@clerk/nextjs/server";
-import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { syncUser } from "@/controllers/user.controller";
 
 export async function POST(req: NextRequest) {
-    const user = await currentUser()
+  try {
+    const user = await currentUser();
 
     if (!user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const users = await db.select().from(usersTable).where(eq(usersTable.email, user?.primaryEmailAddress?.emailAddress as string))
+    const result = await syncUser(
+      user.fullName,
+      user.primaryEmailAddress?.emailAddress as string
+    );
 
-    if(!users.length) {
-        const data = {
-            name:user?.fullName ?? "",
-            email:user?.primaryEmailAddress?.emailAddress as string
-        }
-
-        const res = await db.insert(usersTable).values({
-            ...data
-        }).returning()
-
-        return NextResponse.json( res[0] ?? {})
-    }
-
-    return NextResponse.json( users[0] ?? {})
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("Error in sync user route:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
 }
