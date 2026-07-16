@@ -1,33 +1,42 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { UserContext } from '@/context/UserContext'
+import { UserContext, UserDetail } from '@/context/UserContext'
 import { SettingContext } from '@/context/SettingContext'
-import { RefreshDataContext } from '@/context/RefreshDataContext'
+import { RefreshDataContext, RefreshDataProps } from '@/context/RefreshDataContext'
+import { ProjectType } from '@/types/types'
 
-function Provider({children}: any) {
-    const [userDetail, setUserDetail] = useState<any>(null)
-    const [settingDetails, setSettingDetails] = useState<any>(null)
-    const [refreshData, setRefreshData] = useState<any>(null)
-
-    useEffect(() => {
-        CreateNewUser()
-    }, [])
-
-    const CreateNewUser = async () => {
-        const res = await axios.post('/api/user', {})
-        setUserDetail(res.data)
-    }
-
-    return (
-    <UserContext.Provider value={{userDetail, setUserDetail}}>
-        <SettingContext.Provider value={{settingDetails, setSettingDetails}}>
-            <RefreshDataContext.Provider value={{refreshData, setRefreshData}}>
-            <div>{children}</div>
-            </RefreshDataContext.Provider>
-        </SettingContext.Provider>
-    </UserContext.Provider>
-  )
+interface ProviderProps {
+  children: React.ReactNode;
 }
 
-export default Provider
+function Provider({ children }: ProviderProps) {
+  const [userDetail, setUserDetail] = useState<UserDetail | null>(null);
+  const [settingDetails, setSettingDetails] = useState<ProjectType | null>(null);
+  const [refreshData, setRefreshData] = useState<RefreshDataProps | null>(null);
+
+  useEffect(() => {
+    CreateNewUser();
+  }, []);
+
+  const CreateNewUser = async () => {
+    try {
+      const res = await axios.post<UserDetail>('/api/user', {});
+      setUserDetail(res.data);
+    } catch (error) {
+      console.error("Error creating user:", error);
+    }
+  };
+
+  return (
+    <UserContext.Provider value={{ userDetail, setUserDetail }}>
+      <SettingContext.Provider value={{ settingDetails, setSettingDetails }}>
+        <RefreshDataContext.Provider value={{ refreshData, setRefreshData }}>
+          <div>{children}</div>
+        </RefreshDataContext.Provider>
+      </SettingContext.Provider>
+    </UserContext.Provider>
+  );
+}
+
+export default Provider;
