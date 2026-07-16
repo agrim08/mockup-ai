@@ -1,5 +1,5 @@
 import { SettingContext } from '@/context/SettingContext';
-import { THEMES, themeToCssVars } from '@/data/Theme';
+import { THEMES, themeToCssVars, parseTheme } from '@/data/Theme';
 import { ProjectType, ScreenConfigType } from '@/types/types';
 import { GripVertical } from 'lucide-react';
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
@@ -21,7 +21,7 @@ interface Props {
 const ScreenFrame = ({x, y, setPanningEnabled, width, height, html, projectDetail, screen}: Props) => {
 
     const {settingDetails} = useContext(SettingContext)
-    const themeObj = THEMES[settingDetails?.theme as keyof typeof THEMES ?? projectDetail?.theme as keyof typeof THEMES];
+    const themeObj = parseTheme(settingDetails?.theme ?? projectDetail?.theme);
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
     const [size, setSize] = useState({ width, height });
 
