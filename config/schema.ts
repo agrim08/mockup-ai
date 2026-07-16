@@ -10,7 +10,7 @@ export const usersTable = pgTable("users", {
 export const ProjectsTable = pgTable('project', {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   userId: varchar().notNull().references(() => usersTable?.email),
-  projectId: varchar().notNull(),
+  projectId: varchar().notNull().unique(),
   userInput: varchar().notNull(),
   device: varchar(),
   createdAt: date().defaultNow(),
@@ -29,5 +29,13 @@ export const ScreenConfigTable = pgTable('screenConfig', {
   purpose: varchar(),
   screenDescription: varchar(),
   code:text()
+})
+
+export const UserThemesTable = pgTable('userThemes', {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  userId: varchar().notNull().references(() => usersTable?.email),
+  themeName: varchar().notNull(),
+  themeData: text().notNull(), // will hold stringified CUSTOM:{...} JSON
+  createdAt: date().defaultNow(),
 })
  
