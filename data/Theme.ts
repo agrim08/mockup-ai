@@ -149,9 +149,37 @@ export const THEMES = {
 } as const;
 
 export type ThemeKey = keyof typeof THEMES;
-export type Theme = (typeof THEMES)[ThemeKey];
+export type Theme = (typeof THEMES)[ThemeKey] & {
+  fontFamily?: string;
+};
 
-export function themeToCssVars(theme: any) {
+export function buildCustomTheme(overrides: Partial<Theme>): string {
+  // Use AURORA_INK as base
+  const baseTheme = THEMES['AURORA_INK'];
+  const customTheme = { ...baseTheme, ...overrides };
+  return `CUSTOM:${JSON.stringify(customTheme)}`;
+}
+
+export function parseTheme(themeString: string | undefined): Theme {
+  if (!themeString) return THEMES['AURORA_INK'];
+  
+  if (themeString.startsWith('CUSTOM:')) {
+    try {
+      const json = themeString.replace('CUSTOM:', '');
+      return JSON.parse(json) as Theme;
+    } catch (e) {
+      console.error("Failed to parse custom theme", e);
+      return THEMES['AURORA_INK'];
+    }
+  }
+
+  // Fallback to standard theme
+  const key = themeString as ThemeKey;
+  return THEMES[key] || THEMES['AURORA_INK'];
+}
+
+export function themeToCssVars(themeObj: Theme | string) {
+  const theme = typeof themeObj === 'string' ? parseTheme(themeObj) : themeObj;
   return `
     :root {
       --background: ${theme.background};
@@ -183,13 +211,14 @@ export function themeToCssVars(theme: any) {
       --ring: ${theme.ring};
 
       --radius: ${theme.radius};
+      --font-family: ${theme.fontFamily || 'Inter, system-ui, sans-serif'};
 
       /* charts */
-      --chart-1: ${theme.chart?.[0]};
-      --chart-2: ${theme.chart?.[1]};
-      --chart-3: ${theme.chart?.[2]};
-      --chart-4: ${theme.chart?.[3]};
-      --chart-5: ${theme.chart?.[4]};
+      --chart-1: ${theme.chart?.[0] || '#ff4fd8'};
+      --chart-2: ${theme.chart?.[1] || '#6dffb2'};
+      --chart-3: ${theme.chart?.[2] || '#5cc8ff'};
+      --chart-4: ${theme.chart?.[3] || '#ffb84d'};
+      --chart-5: ${theme.chart?.[4] || '#b18cff'};
     }
   `;
 }
