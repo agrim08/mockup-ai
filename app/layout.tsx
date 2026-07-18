@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Poppins } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import Provider from "./provider";
 import { Toaster } from "sonner";
 
-const inter = Inter({
-  variable: "--font-inter",
+const poppins = Poppins({
+  weight: ['300', '400', '500', '600', '700'],
+  variable: "--font-poppins",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "UIUX Mockup AI",
+  title: "Forma",
   description: "Generated quality mockups for your UIUX projects",
 };
 
@@ -24,7 +26,7 @@ export default function RootLayout({
     <ClerkProvider>
     <html lang="en">
       <body
-        className={`${inter.variable} antialiased`}
+        className={`${poppins.variable} font-sans antialiased`}
       >
         <Provider>
             {children}
