@@ -6,7 +6,7 @@ import ScreenFrame from "./ScreenFrame";
 import ScreenSkeleton from "./ScreenSkeleton";
 import { ProjectType, ScreenConfigType } from "@/types/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Minus, Plus, RefreshCcw, Layout } from "lucide-react";
+import { Minus, Plus, RefreshCcw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -116,9 +116,10 @@ const Canvas = ({projectDetail, screenConfig, loading, generatingScreenId}: Prop
             maxScale={3}
             centerOnInit={true}
             limitToBounds={false}
-            wheel={{step:0.8}}
-            doubleClick={{disabled:false}}
-            panning={{disabled: !panningEnabled}}
+            wheel={{ step: 0.08, smoothStep: 0.003 }}
+            doubleClick={{ disabled: false }}
+            panning={{ disabled: !panningEnabled, velocityDisabled: false }}
+            velocityAnimation={{ sensitivity: 1, animationTime: 400, equalToMove: true }}
         >
             {() => (
         <>
@@ -158,6 +159,46 @@ const Canvas = ({projectDetail, screenConfig, loading, generatingScreenId}: Prop
             </>
         )}
         </TransformWrapper>
+
+        {/* Loading overlay — shown while project is loading and no screens exist yet */}
+        {loading && screenConfig.length === 0 && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-gray-100/80 backdrop-blur-sm z-30">
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-2xl bg-white shadow-xl flex items-center justify-center">
+                  <Loader2 className="w-7 h-7 text-primary animate-spin" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full animate-pulse" />
+              </div>
+              <div className="text-center">
+                <p className="text-slate-700 font-semibold text-base">Creating your project</p>
+                <p className="text-slate-400 text-sm mt-1">AI is designing your screens...</p>
+              </div>
+            </div>
+            {/* Skeleton preview cards */}
+            <div className="flex gap-4 opacity-40">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="w-48 h-72 rounded-2xl bg-white shadow-md overflow-hidden"
+                  style={{ opacity: 1 - i * 0.25, transform: `scale(${1 - i * 0.05})` }}
+                >
+                  <div className="h-8 bg-slate-100 border-b border-slate-200" />
+                  <div className="p-3 space-y-2.5">
+                    <div className="h-3 w-3/4 bg-slate-200 rounded-full animate-pulse" />
+                    <div className="h-16 w-full bg-slate-100 rounded-xl animate-pulse" style={{ animationDelay: `${i * 150}ms` }} />
+                    <div className="h-3 w-full bg-slate-200 rounded-full animate-pulse" style={{ animationDelay: `${i * 100}ms` }} />
+                    <div className="h-3 w-4/5 bg-slate-200 rounded-full animate-pulse" style={{ animationDelay: `${i * 120}ms` }} />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="h-10 bg-slate-100 rounded-lg animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
+                      <div className="h-10 bg-slate-100 rounded-lg animate-pulse" style={{ animationDelay: `${i * 90}ms` }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
     </div>
   )
 }

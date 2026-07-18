@@ -1,7 +1,8 @@
 import React, { useContext, useState } from 'react'
 import Logo from '@/data/Logo'
 import { Button } from '@/components/ui/button'
-import { Loader2, Save, Play, Download } from 'lucide-react'
+import { Loader2, Save, Play, Download, Camera, Share } from 'lucide-react'
+import html2canvas from 'html2canvas'
 import { UserButton } from '@clerk/nextjs'
 import { SettingContext } from '@/context/SettingContext'
 import axios from 'axios'
@@ -20,6 +21,7 @@ const ProjectHeader = ({ screenConfig = [], projectDetail }: Props) => {
   const [loading, setLoading] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [isCapturing, setIsCapturing] = useState(false)
 
   const hasGeneratedScreens = screenConfig.some(s => !!s.code)
   const themeKey = projectDetail?.theme as keyof typeof THEMES
@@ -69,7 +71,96 @@ const ProjectHeader = ({ screenConfig = [], projectDetail }: Props) => {
       setIsExporting(false)
     }
   }
+  const handleScreenshot = async () => {
+    try {
+      setIsCapturing(true)
+      const iframes = document.querySelectorAll('iframe')
+      if (iframes.length === 0) {
+        toast.error("No screens found to capture")
+        setIsCapturing(false)
+        return
+      }
 
+      toast.loading("Capturing project preview...", { id: 'screenshot-header' })
+
+      const capturedImages: HTMLCanvasElement[] = []
+      
+      for (let i = 0; i < iframes.length; i++) {
+        const iframe = iframes[i]
+        const doc = iframe.contentDocument || iframe.contentWindow?.document
+        if (!doc) continue
+        
+        const body = doc.body
+        const canvas = await html2canvas(body, {
+          useCORS: true,
+          scale: 0.5, // Scale down for performance and storage
+          backgroundColor: '#ffffff'
+        })
+        capturedImages.push(canvas)
+      }
+
+      if (capturedImages.length === 0) {
+        toast.dismiss('screenshot-header')
+        setIsCapturing(false)
+        return
+      }
+
+      // Stitch images together
+      const gap = 40
+      const totalWidth = capturedImages.reduce((acc, canvas) => acc + canvas.width, 0) + (capturedImages.length - 1) * gap
+      const maxHeight = Math.max(...capturedImages.map(canvas => canvas.height))
+
+      const finalCanvas = document.createElement('canvas')
+      finalCanvas.width = totalWidth + 100 // Padding
+      finalCanvas.height = maxHeight + 100
+      const ctx = finalCanvas.getContext('2d')
+      if (!ctx) throw new Error("Could not get context")
+
+      // Fill background
+      ctx.fillStyle = '#f8fafc' // Slate 50
+      ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height)
+
+      let currentX = 50
+      capturedImages.forEach((canvas) => {
+        // Draw shadow
+        ctx.shadowColor = 'rgba(0,0,0,0.1)'
+        ctx.shadowBlur = 20
+        ctx.shadowOffsetX = 0
+        ctx.shadowOffsetY = 10
+        
+        ctx.drawImage(canvas, currentX, 50)
+        currentX += canvas.width + gap
+      })
+
+      const base64Image = finalCanvas.toDataURL('image/png')
+
+      // Download
+      const link = document.createElement('a')
+      link.href = base64Image
+      link.download = `${projectDetail?.projectName || 'project'}-mockup.png`
+      link.click()
+
+      // Save to DB
+      await axios.put('/api/project', {
+        projectId: projectDetail?.projectId,
+        logo: base64Image
+      })
+
+      toast.success("Project screenshot saved and downloaded!", { id: 'screenshot-header' })
+    } catch (error) {
+      console.error("Screenshot error:", error)
+      toast.error("Failed to capture screenshot", { id: 'screenshot-header' })
+    } finally {
+      setIsCapturing(false)
+    }
+  }
+
+  const handleShare = () => {
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(window.location.href)
+      toast.success("Project link copied to clipboard!")
+    }
+  }
   return (
     <>
       <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
@@ -82,6 +173,31 @@ const ProjectHeader = ({ screenConfig = [], projectDetail }: Props) => {
 
             {/* Action Buttons on Right */}
             <div className="flex items-center gap-3">
+              {/* Shot */}
+              {hasGeneratedScreens && (
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 text-sm h-9 px-3 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  onClick={handleScreenshot}
+                  disabled={isCapturing}
+                >
+                  {isCapturing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                  Shot
+                </Button>
+              )}
+
+              {/* Share */}
+              {hasGeneratedScreens && (
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 text-sm h-9 px-3 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  onClick={handleShare}
+                >
+                  <Share className="w-4 h-4" />
+                  Share
+                </Button>
+              )}
+
               {/* Export Design Tokens */}
               {hasGeneratedScreens && (
                 <Button
