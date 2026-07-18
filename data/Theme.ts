@@ -149,9 +149,136 @@ export const THEMES = {
 } as const;
 
 export type ThemeKey = keyof typeof THEMES;
-export type Theme = (typeof THEMES)[ThemeKey] & {
+
+// Widen all string-literal fields to plain `string` so that dynamically
+// derived themes (e.g. from deriveFullTheme) are assignable to Theme.
+type Widen<T> = {
+  [K in keyof T]: T[K] extends string ? string : T[K] extends readonly (infer U)[] ? U extends string ? readonly string[] : T[K] : T[K];
+};
+
+export type Theme = Widen<(typeof THEMES)[ThemeKey]> & {
   fontFamily?: string;
 };
+
+// ─── Color Utility Functions ─────────────────────────────────────────────────
+
+/** Parse a hex string (#rrggbb or #rgb) into [r, g, b] 0-255 */
+function hexToRgb(hex: string): [number, number, number] {
+  const clean = hex.replace('#', '')
+  const full = clean.length === 3
+    ? clean.split('').map(c => c + c).join('')
+    : clean
+  const n = parseInt(full, 16)
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+}
+
+/** Format [r, g, b] back to hex */
+function rgbToHex(r: number, g: number, b: number): string {
+  return '#' + [r, g, b].map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('')
+}
+
+/** WCAG relative luminance (0 = black, 1 = white) */
+export function getLuminance(hex: string): number {
+  const [r, g, b] = hexToRgb(hex).map(v => {
+    const s = v / 255
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
+  })
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+/** Returns #ffffff or #0a0a0a — whichever contrasts better against the given bg */
+export function getContrastColor(bg: string): string {
+  return getLuminance(bg) > 0.35 ? '#0a0a0a' : '#ffffff'
+}
+
+/**
+ * Mix hex color toward white (amount > 0) or toward black (amount < 0).
+ * amount: -1.0 (full black) to 1.0 (full white)
+ */
+function tintColor(hex: string, amount: number): string {
+  const [r, g, b] = hexToRgb(hex)
+  const target = amount > 0 ? 255 : 0
+  const t = Math.abs(amount)
+  return rgbToHex(r + (target - r) * t, g + (target - g) * t, b + (target - b) * t)
+}
+
+/** Lighten a color by a given ratio (0-1) */
+function lighten(hex: string, ratio: number): string { return tintColor(hex, ratio) }
+/** Darken a color by a given ratio (0-1) */
+function darken(hex: string, ratio: number): string { return tintColor(hex, -ratio) }
+
+/**
+ * Derive a full, harmonious 18-token theme from 3-5 user-selected colors.
+ * Foreground / text colors are auto-calculated using WCAG contrast.
+ */
+export function deriveFullTheme(
+  primary: string,
+  background: string,
+  card: string,
+  accent?: string,
+  foreground?: string,
+  radius?: string,
+  fontFamily?: string,
+): Theme {
+  const isLightBg = getLuminance(background) > 0.35
+
+  // Auto-derive foreground if not provided
+  const fg = foreground || getContrastColor(background)
+  const cardFg = getContrastColor(card)
+  const primaryFg = getContrastColor(primary)
+
+  // Derive accent from primary if not provided (complementary tint)
+  const derivedAccent = accent || (isLightBg ? lighten(primary, 0.35) : lighten(primary, 0.25))
+  const accentFg = getContrastColor(derivedAccent)
+
+  // Secondary is a subtle tone between background and card
+  const secondary = isLightBg ? darken(background, 0.07) : lighten(background, 0.07)
+  const secondaryFg = getContrastColor(secondary)
+
+  // Muted is a softer version of background
+  const muted = isLightBg ? darken(background, 0.04) : lighten(background, 0.04)
+  const mutedFg = isLightBg ? darken(fg, 0.35) : lighten(fg, 0.35)
+
+  // Border is a slightly more prominent version of muted
+  const border = isLightBg ? darken(background, 0.12) : lighten(background, 0.12)
+
+  // Extract rgb components for primaryRgb
+  const [pr, pg, pb] = hexToRgb(primary)
+
+  // Chart colors: variations of primary + accent
+  const chart = [
+    primary,
+    derivedAccent,
+    isLightBg ? darken(primary, 0.2) : lighten(primary, 0.25),
+    isLightBg ? lighten(derivedAccent, 0.2) : darken(derivedAccent, 0.2),
+    isLightBg ? darken(background, 0.25) : lighten(background, 0.3),
+  ]
+
+  return {
+    background,
+    foreground: fg,
+    card,
+    cardForeground: cardFg,
+    popover: card,
+    popoverForeground: cardFg,
+    primary,
+    primaryRgb: `${pr}, ${pg}, ${pb}`,
+    primaryForeground: primaryFg,
+    secondary,
+    secondaryForeground: secondaryFg,
+    muted,
+    mutedForeground: mutedFg,
+    accent: derivedAccent,
+    accentForeground: accentFg,
+    destructive: '#ef4444',
+    border,
+    input: border,
+    ring: primary,
+    radius: radius || '0.5rem',
+    fontFamily: fontFamily || 'Inter, system-ui, sans-serif',
+    chart,
+  }
+}
 
 export function buildCustomTheme(overrides: Partial<Theme>): string {
   // Use AURORA_INK as base
@@ -161,7 +288,7 @@ export function buildCustomTheme(overrides: Partial<Theme>): string {
 }
 
 export function parseTheme(themeString: string | undefined): Theme {
-  if (!themeString) return THEMES['AURORA_INK'];
+  if (!themeString) return THEMES['AURORA_INK'] as Theme;
   
   if (themeString.startsWith('CUSTOM:')) {
     try {
@@ -169,13 +296,13 @@ export function parseTheme(themeString: string | undefined): Theme {
       return JSON.parse(json) as Theme;
     } catch (e) {
       console.error("Failed to parse custom theme", e);
-      return THEMES['AURORA_INK'];
+      return THEMES['AURORA_INK'] as Theme;
     }
   }
 
   // Fallback to standard theme
   const key = themeString as ThemeKey;
-  return THEMES[key] || THEMES['AURORA_INK'];
+  return (THEMES[key] as Theme) || (THEMES['AURORA_INK'] as Theme);
 }
 
 export function themeToCssVars(themeObj: Theme | string) {
