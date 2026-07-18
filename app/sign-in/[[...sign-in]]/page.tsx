@@ -28,18 +28,16 @@ export default function Page() {
         <div className="relative z-10 flex flex-col justify-center items-center w-full px-12 text-white">
           {/* Logo with Micro-interaction */}
           <div className="mb-8 group cursor-pointer">
-            <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center border border-indigo-500 shadow-lg shadow-indigo-600/50 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-2xl group-hover:shadow-indigo-500/60">
-              <svg className="w-8 h-8 text-white transition-transform duration-300 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+            <div className="w-16 h-16 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-6">
+              <img src="/forma-logo.svg?v=2" alt="Forma Logo" className="w-16 h-16 transition-transform duration-300 group-hover:scale-110" />
             </div>
           </div>
           
           {/* Heading */}
           <h1 className="text-4xl md:text-5xl font-bold text-center mb-4 tracking-tight">
             Welcome to{' '}
-            <span className="text-indigo-400">
-              UI/UX Mockup AI
+            <span className="text-indigo-400 font-runethia font-normal text-5xl">
+              Forma
             </span>
           </h1>
           
@@ -103,10 +101,8 @@ export default function Page() {
         <div className="relative z-10 w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex justify-center mb-8">
-            <div className="w-14 h-14 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30">
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+            <div className="w-14 h-14 flex items-center justify-center">
+              <img src="/forma-logo.svg?v=2" alt="Forma Logo" className="w-14 h-14" />
             </div>
           </div>
           
