@@ -16,6 +16,8 @@ Forma is a powerful, AI-driven platform designed to transform your creative conc
 - **✍️ Interactive Workspace**: Drag, position, and resize screen frames fluidly on the zoomable canvas.
 - **💻 Source Code Inspector & Exporter**: Instantly inspect generated HTML/Tailwind mockup code, adjust display font size size, copy code, or export designs to PNG images.
 - **🪄 Direct Screen Regenerator**: Refine specific screens inline by providing conversational feedback text to regenerate code config modifications instantly.
+- **🧠 Persisted AI Design Reviews**: Generate AI UX design audits, accessibility reports, and interaction feedback, stored natively in the PostgreSQL database to preserve history and prevent redundant generation costs.
+- **🛠️ Detached Screen Toolbars**: Floating workspace controls with enlarged, comfortable click targets and instant tooltips ("Source Code", "Download", "Design Review", "Magic Edit") positioned above screen mockups.
 - **📂 Workspace Project Dashboard**: Create, retrieve, and delete mockups, maintaining distinct user workspace histories.
 
 ## 🛠️ Tech Stack

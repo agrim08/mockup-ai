@@ -28,7 +28,8 @@ export const ScreenConfigTable = pgTable('screenConfig', {
   screenName: varchar(),
   purpose: varchar(),
   screenDescription: varchar(),
-  code:text()
+  code:text(),
+  aiReview: json()
 })
 
 export const UserThemesTable = pgTable('userThemes', {

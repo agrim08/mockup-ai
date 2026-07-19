@@ -17,5 +17,6 @@ export type ScreenConfigType = {
     screenName: string,
     purpose: string,
     screenDescription: string,
-    code: string
+    code: string,
+    aiReview?: any
 }

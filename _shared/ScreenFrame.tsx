@@ -129,20 +129,21 @@ const ScreenFrame = ({x, y, setPanningEnabled, width, height, html, projectDetai
             });
         }}
     >
-
-        <ScreenHandler 
-            screen={screen} 
-            theme={themeObj} 
-            iframeRef={iframeRef} 
-            projectId={projectDetail?.projectId as string}
-            projectVisualDescription={projectDetail?.projectVisualDescription as string}
-        />
-        <iframe 
-            ref={iframeRef}
-            className='w-full bg-white h-[calc(100%-85px)] rounded-b-2xl'
-            sandbox='allow-same-origin allow-scripts'
-            srcDoc={htmlCode}
-        />
+        <div className="relative w-full h-full z-10">
+            <ScreenHandler 
+                screen={screen} 
+                theme={themeObj} 
+                iframeRef={iframeRef} 
+                projectId={projectDetail?.projectId as string}
+                projectVisualDescription={projectDetail?.projectVisualDescription as string}
+            />
+            <iframe 
+                ref={iframeRef}
+                className='w-full bg-white h-full rounded-2xl shadow-[0_0_40px_-15px_rgba(0,0,0,0.15)] ring-1 ring-slate-200/60'
+                sandbox='allow-same-origin allow-scripts'
+                srcDoc={htmlCode}
+            />
+        </div>
     </Rnd>
   )
 }

@@ -15,6 +15,10 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: "Forma",
   description: "Generated quality mockups for your UIUX projects",
+  icons: {
+    icon: "/forma-logo.svg",
+    apple: "/forma-logo.svg",
+  },
 };
 
 export default function RootLayout({
