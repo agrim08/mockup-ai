@@ -13,6 +13,10 @@ Forma is a powerful, AI-driven platform designed to transform your creative conc
 - **🔍 Smooth Zooming & Panning Canvas**: Highly responsive canvas navigation utilizing fractional wheel/trackpad scaling steps (`0.08`), trackpad pinch support (`smoothStep`), and velocity-based inertial momentum deceleration.
 - **🎬 True Fullscreen Prototype Player**: Interactive HUD presentation player that requests native browser fullscreen API, expands web mockups to full page width (`100vw`), wraps mobile mockups in notched frames, and supports keyboard (arrows & Esc) navigation.
 - **⚡ Staggered Skeleton States**: Staggered loading stacks and pulse loading screen configs to prevent blank canvas whiteouts.
+- **✍️ Interactive Workspace**: Drag, position, and resize screen frames fluidly on the zoomable canvas.
+- **💻 Source Code Inspector & Exporter**: Instantly inspect generated HTML/Tailwind mockup code, adjust display font size size, copy code, or export designs to PNG images.
+- **🪄 Direct Screen Regenerator**: Refine specific screens inline by providing conversational feedback text to regenerate code config modifications instantly.
+- **📂 Workspace Project Dashboard**: Create, retrieve, and delete mockups, maintaining distinct user workspace histories.
 
 ## 🛠️ Tech Stack
 
